@@ -12,3 +12,10 @@ docs/
 
 # Dotenv file
 .env
+
+# Gas snapshot file
+.gas-snapshot
+
+# Node modules and libraries
+node_modules/
+lib/
