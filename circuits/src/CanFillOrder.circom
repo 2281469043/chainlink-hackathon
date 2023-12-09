@@ -21,23 +21,22 @@ template CanFillOrder() {
     verifySignature.enabled <== 1;
     verifySignature.Ax <== buyerPublicKeyAx;
     verifySignature.Ay <== buyerPublicKeyAy;
-    verifySignature.M <== supplyHash;
     verifySignature.R8x <== signatureR8x;
     verifySignature.R8y <== signatureR8y;
     verifySignature.S <== signatureS;
-    verifySignature.M = requestedSupply;
+    verifySignature.M <== requestedSupply;
     
     // verify supply hash
     component calculatedHash = SaltedHash(1);
     calculatedHash.salt <== salt;
     calculatedHash.ins[0] <== supply;
-    calculatedHash.out === suppliesHash;
+    calculatedHash.out === supplyHash;
 
     // verify amount
     component checkSupplies = LessEqThan(64);
-    checkSupplies.in[0] = requestedSupply;
-    checkSupplies.in[1] = supply;
+    checkSupplies.in[0] <== requestedSupply;
+    checkSupplies.in[1] <== supply;
     checkSupplies.out === 1;
 }
 
-component main{public [supplyHash, buyerPublicKey]} = CanFillOrder();
+component main{public [supplyHash, buyerPublicKeyAx, buyerPublicKeyAy]} = CanFillOrder();

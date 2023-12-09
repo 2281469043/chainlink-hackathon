@@ -5,7 +5,7 @@ const { buildEddsa } = require("circomlibjs");
 const { Scalar } = require("ffjavascript");
 
 async function calculateSupplyHash(supply, salt) {
-  const circuitPath = path.join(__dirname, "../src/SaltedHashMain.circom");
+  const circuitPath = path.join(__dirname, "..", "src", "SaltedHashMain.circom");
 
   const circuit = await wasm_tester(
     circuitPath
@@ -22,10 +22,26 @@ async function calculateSupplyHash(supply, salt) {
 
 async function calculateSignature(prv, msg) {
   const eddsa = await buildEddsa();
-  const msgBuf = Buffer.from(msg, "utf8");
-  const msgArray = Uint8Array.from(msgBuf);
-  const msgF = eddsa.babyJub.F.e(Scalar.fromRprLE(msgArray, 0));
-  return eddsa.signMiMCSponge(prv, msgF);
+  const msgF = eddsa.babyJub.F.e(msg)
+  const signature = eddsa.signMiMCSponge(prv, msgF);
+  return signature;
+}
+
+async function verifySignature(A, msg, signature) {
+  const eddsa = await buildEddsa();
+  const msgF = eddsa.babyJub.F.e(msg)
+  return eddsa.verifyMiMCSponge(msgF, signature, A);
+}
+
+async function getPublicKey(prv) {
+  const eddsa = await buildEddsa();
+  return eddsa.prv2pub(prv);
+}
+
+async function toBabyJubScalar(value) {
+  const eddsa = await buildEddsa();
+  const F = eddsa.babyJub.F;
+  return F.toString(F.e(value));
 }
 
 describe("SaltedHash", function() {
@@ -37,17 +53,30 @@ describe("SaltedHash", function() {
   });
 });
 
+const PRIVATE_KEY_HEX = "1".repeat(64);
+const PRIVATE_KEY_BUFFER = Buffer.from(PRIVATE_KEY_HEX, "hex");
+
+const toHexString = bytes =>
+  bytes.reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '');
+
 describe("Signature", function() {
-  it("Should sign a message", async function() {
-    const privateKeyHex = "1".repeat(64); // 32 bytes
-    const prv = Buffer.from(privateKeyHex, "hex");
-    const msg = "test"; // needs to be a multiple of 4 bytes
+  this.timeout(10_000);
 
-    const {
-      R8,
-      S
-    } = await calculateSignature(prv, msg);
+  it("Should calculate a public key", async function() {
+    const [Ax, Ay] = await getPublicKey(PRIVATE_KEY_BUFFER);
 
+    expect(Ax).to.not.be.undefined;
+    expect(Ax).to.not.equal(0);
+    expect(Ay).to.not.be.undefined;
+    expect(Ay).to.not.equal(0);
+  });
+
+  it("Should sign and verify a message", async function() {
+    const msg = "10";
+
+    const signature = await calculateSignature(PRIVATE_KEY_BUFFER, msg);
+
+    const { R8, S } = signature;
     const [R8x, R8y] = R8;
 
     expect(R8x).to.not.be.undefined;
@@ -56,101 +85,48 @@ describe("Signature", function() {
     expect(R8y).to.not.equal(0);
     expect(S).to.not.be.undefined;
     expect(S).to.not.equal(0);
+
+    const [Ax, Ay] = await getPublicKey(PRIVATE_KEY_BUFFER);
+
+    const verified = await verifySignature([Ax, Ay], msg, signature);
+    expect(verified).to.be.true;
   });
 });
 
 
-// describe('CanFillOrder', function() {
-//   const circuitPath = path.join(__dirname, "canfillorder.circom");
+describe('CanFillOrder', function() {
+  this.timeout(10_000);
 
-//   it('Should succeed with valid inputs', async function() {
-//     const circuit = await wasm_tester(
-//       circuitPath
-//     );
+  const circuitPath = path.join(__dirname, "..", "src", "CanFillOrder.circom");
 
-//     let supplies = [...SUPPLIES];
-//     supplies[5] = 10;
+  it('Should succeed with valid inputs', async function() {
+    const circuit = await wasm_tester(
+      circuitPath
+    );
 
-//     const w = await circuit.calculateWitness({
-//       supplies: supplies,
-//       seller: 5,
-//       supply: 5,
-//       suppliesHash: await calculateSuppliesHash(supplies, 0),
-//       salt: 0
-//     });
+    const [Ax, Ay] = await getPublicKey(PRIVATE_KEY_BUFFER);
+    const msg = 10;
+    const { R8, S } = await calculateSignature(PRIVATE_KEY_BUFFER, msg);
 
-//     await circuit.checkConstraints(w);
-//   });
+    const [R8x, R8y] = R8;
 
-//   it('Should fail with invalid hash', async function() {
-//     const circuit = await wasm_tester(
-//       circuitPath
-//     );
+    const ffR8x = await toBabyJubScalar(R8x);
+    const ffR8y = await toBabyJubScalar(R8y);
+    const ffAx = await toBabyJubScalar(Ax);
+    const ffAy = await toBabyJubScalar(Ay);
 
-//     let supplies = [...SUPPLIES];
-//     supplies[5] = 10;
+    const w = await circuit.calculateWitness({
+      requestedSupply: msg,
+      buyerPublicKeyAx: ffAx,
+      buyerPublicKeyAy: ffAy,
+      signatureR8x: ffR8x,
+      signatureR8y: ffR8y,
+      signatureS: S,
+      supply: 100,
+      supplyHash: await calculateSupplyHash(100, 0),
+      salt: 0
+    });
 
-//     let passed = false;
-
-//     try {
-//       await circuit.calculateWitness({
-//         supplies: supplies,
-//         seller: 5,
-//         supply: 5,
-//         suppliesHash: await calculateSuppliesHash(SUPPLIES, 0),
-// 	salt: 0
-//       });
-//       passed = true;
-//     } catch (e) {
-//       expect(e.message).to.contain("Assert Failed.");
-//     }
-
-//     expect(passed).to.be.false;
-//   });
-
-//   it('Should fail with invalid index', async function() {
-//     const circuit = await wasm_tester(
-//       circuitPath
-//     );
-
-//     let passed = false;
-
-//     try {
-//       await circuit.calculateWitness({
-//         supplies: SUPPLIES,
-//         seller: 11,
-//         supply: 0,
-//         suppliesHash: await calculateSuppliesHash(SUPPLIES, 0),
-// 	salt: 0
-//       });
-//       passed = true;
-//     } catch (e) {
-//       expect(e.message).to.contain("Assert Failed.");
-//     }
-
-//     expect(passed).to.be.false;
-//   });
-
-//   it('Should fail with invalid supply', async function() {
-//     const circuit = await wasm_tester(
-//       circuitPath
-//     );
-
-//     let passed = false;
-
-//     try {
-//       await circuit.calculateWitness({
-//         supplies: SUPPLIES,
-//         seller: 5,
-//         supply: 1,
-//         suppliesHash: await calculateSuppliesHash(SUPPLIES, 0),
-// 	salt: 0
-//       });
-//       passed = true;
-//     } catch (e) {
-//       expect(e.message).to.contain("Assert Failed.");
-//     }
-
-//     expect(passed).to.be.false;
-//   });
-// });
+    await circuit.checkConstraints(w);
+  });
+});
