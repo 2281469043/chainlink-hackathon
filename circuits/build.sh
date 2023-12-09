@@ -16,4 +16,9 @@ do
   npx snarkjs zkey verify build/${CIRCUIT_NAME}.r1cs $PTAU_FILE build/${CIRCUIT_NAME}_0001.zkey
   npx snarkjs zkey export verificationkey build/${CIRCUIT_NAME}_0001.zkey build/${CIRCUIT_NAME}_verification_key.json
   npx snarkjs zkey export solidityverifier build/${CIRCUIT_NAME}_0001.zkey build/${CIRCUIT_NAME}_verifier.sol
+
+  # copy to frontend
+  cp build/${CIRCUIT_NAME}_0001.zkey ../frontend/public/${CIRCUIT_NAME}_0001.zkey
+  cp build/${CIRCUIT_NAME}_verification_key.json ../frontend/public/${CIRCUIT_NAME}_verification_key.json
+  cp build/${CIRCUIT_NAME}_js/${CIRCUIT_NAME}.wasm ../frontend/public/${CIRCUIT_NAME}.wasm
 done
