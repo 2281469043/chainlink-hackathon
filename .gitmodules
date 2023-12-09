@@ -1,9 +1,9 @@
-[submodule "contracts/lib/foundry-chainlink-toolkit"]
-	path = contracts/lib/foundry-chainlink-toolkit
-	url = https://github.com/smartcontractkit/foundry-chainlink-toolkit
-[submodule "contracts/lib/ccip"]
-	path = contracts/lib/ccip
-	url = https://github.com/smartcontractkit/ccip
 [submodule "contracts/lib/forge-std"]
 	path = contracts/lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
+[submodule "contracts/lib/ccip"]
+	path = contracts/lib/ccip
+	url = https://github.com/smartcontractkit/ccip
+[submodule "contracts/lib/foundry-chainlink-toolkit"]
+	path = contracts/lib/foundry-chainlink-toolkit
+	url = https://github.com/smartcontractkit/foundry-chainlink-toolkit
