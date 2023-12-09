@@ -4,7 +4,8 @@
   "description": "Circuits for Chainlink Hackathon project",
   "main": "index.js",
   "scripts": {
-    "test": "npx mocha tests/test.js"
+    "test": "npx mocha tests/test.js",
+    "build": "./build.sh"
   },
   "author": "",
   "license": "UNLICENSED",

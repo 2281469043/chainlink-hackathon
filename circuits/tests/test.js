@@ -2,7 +2,6 @@ const { expect } = require("chai");
 const path = require("path");
 const wasm_tester = require("circom_tester").wasm;
 const { buildEddsa } = require("circomlibjs");
-const { Scalar } = require("ffjavascript");
 
 async function calculateSupplyHash(supply, salt) {
   const circuitPath = path.join(__dirname, "..", "src", "SaltedHashMain.circom");
@@ -76,7 +75,7 @@ describe("Signature", function() {
 
     const signature = await calculateSignature(PRIVATE_KEY_BUFFER, msg);
 
-    const { R8, S } = signature;
+    const {R8, S} = signature;
     const [R8x, R8y] = R8;
 
     expect(R8x).to.not.be.undefined;
@@ -104,11 +103,12 @@ describe('CanFillOrder', function() {
       circuitPath
     );
 
-    const [Ax, Ay] = await getPublicKey(PRIVATE_KEY_BUFFER);
-    const msg = 10;
-    const { R8, S } = await calculateSignature(PRIVATE_KEY_BUFFER, msg);
+    const requestedSupply = 10;
+    const supply = 100;
 
+    const {R8, S} = await calculateSignature(PRIVATE_KEY_BUFFER, requestedSupply);
     const [R8x, R8y] = R8;
+    const [Ax, Ay] = await getPublicKey(PRIVATE_KEY_BUFFER);
 
     const ffR8x = await toBabyJubScalar(R8x);
     const ffR8y = await toBabyJubScalar(R8y);
@@ -116,14 +116,14 @@ describe('CanFillOrder', function() {
     const ffAy = await toBabyJubScalar(Ay);
 
     const w = await circuit.calculateWitness({
-      requestedSupply: msg,
+      requestedSupply: requestedSupply,
       buyerPublicKeyAx: ffAx,
       buyerPublicKeyAy: ffAy,
       signatureR8x: ffR8x,
       signatureR8y: ffR8y,
       signatureS: S,
-      supply: 100,
-      supplyHash: await calculateSupplyHash(100, 0),
+      supply: supply,
+      supplyHash: await calculateSupplyHash(supply, 0),
       salt: 0
     });
 

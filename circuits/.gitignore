@@ -1,1 +1,10 @@
 node_modules/
+build/*_cpp
+build/*_js
+build/*.r1cs
+build/*.sym
+build/*.zkey
+build/*.wasm
+build/*_verification_key.json
+build/*.sol
+*.ptau
