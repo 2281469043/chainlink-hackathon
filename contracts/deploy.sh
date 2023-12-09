@@ -1,0 +1,1 @@
+forge create --constructor-args 0x9527e2d01a3064ef6b50c1da1c0cc523803bcff2 0x51441fD4acacCC9BDA38178244C13f1E4D1367Bd --rpc-url https://bsc-testnet.publicnode.com --private-key 2c6eab55234ec79d79cf8c4e2a5a2fbaf211469eccd84fa47849c9c20925aa65 src/Seller.sol:Seller

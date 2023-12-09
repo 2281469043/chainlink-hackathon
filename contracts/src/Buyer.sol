@@ -5,12 +5,13 @@ import {OwnerIsCreator} from "@chainlink/contracts-ccip/src/v0.8/shared/access/O
 import {IRouterClient} from "@chainlink/contracts-ccip/src/v0.8/ccip/interfaces/IRouterClient.sol";
 import {Client} from "@chainlink/contracts-ccip/src/v0.8/ccip/libraries/Client.sol";
 import {LinkTokenInterface} from "@chainlink/contracts-ccip/src/v0.8/shared/interfaces/LinkTokenInterface.sol";
+import {CCIPReceiver} from "@chainlink/contracts-ccip/src/v0.8/ccip/applications/CCIPReceiver.sol";
 
 /**
  * A contract that represents the functionality of a Buyer in a supply-chain context, where there are some 
  secret information (the amount of supply) to be send to the seller that is operating in another chain.
  */
-contract Buyer is OwnerIsCreator {
+contract Buyer is OwnerIsCreator, CCIPReceiver {
 
     struct PublicKey{
         uint64 Ax;
@@ -33,7 +34,6 @@ contract Buyer is OwnerIsCreator {
     LinkTokenInterface linkToken;
     
     mapping(uint64 => bool) public whitelistedChains;
-
     mapping(address => Order) public sellers;
     
     error NotEnoughBalance(uint256 currentBalance, uint256 calculatedFees); 
@@ -56,7 +56,7 @@ contract Buyer is OwnerIsCreator {
         _;
     }
 
-    constructor(address _router, address _link) {
+    constructor(address _router, address _link) CCIPReceiver(address(router)) {
         router = IRouterClient(_router);
         linkToken = LinkTokenInterface(_link);
     }
@@ -99,7 +99,7 @@ contract Buyer is OwnerIsCreator {
         whitelistedChains[_destinationChainSelector] = false;
     }
 
-    /**
+    /*
         Sends order information to a specified destination chain using CCIP
     */
     function sendOrderInfoViaCCIP(
@@ -153,6 +153,13 @@ contract Buyer is OwnerIsCreator {
             encryptedAmount,
             amountSignedBySeller,
             ccipFees
-        );   
+        );
+    }
+
+    function _ccipReceive(
+        Client.Any2EVMMessage memory any2EvmMessage
+    ) internal override{
+        
+        //
     }
 }

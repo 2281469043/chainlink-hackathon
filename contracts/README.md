@@ -64,3 +64,21 @@ $ forge --help
 $ anvil --help
 $ cast --help
 ```
+
+## Local development:
+
+### Chainlink
+
+```shell
+make fct-anvil
+```
+
+### EVM nodes
+
+```shell
+anvil -p 8546
+```
+
+```shell
+anvil -p 8547
+```
