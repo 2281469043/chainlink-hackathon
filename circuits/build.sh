@@ -21,4 +21,7 @@ do
   cp build/${CIRCUIT_NAME}_0001.zkey ../frontend/public/${CIRCUIT_NAME}_0001.zkey
   cp build/${CIRCUIT_NAME}_verification_key.json ../frontend/public/${CIRCUIT_NAME}_verification_key.json
   cp build/${CIRCUIT_NAME}_js/${CIRCUIT_NAME}.wasm ../frontend/public/${CIRCUIT_NAME}.wasm
+
+  # copy to contracts
+  cp build/${CIRCUIT_NAME}_verifier.sol ../contracts/src/${CIRCUIT_NAME}_verifier.sol
 done
