@@ -13,40 +13,35 @@ import {CCIPReceiver} from "@chainlink/contracts-ccip/src/v0.8/ccip/applications
  */
 contract Buyer is OwnerIsCreator, CCIPReceiver {
 
-    struct PublicKey{
-        uint64 Ax;
-        uint64 Ay;
-    }
-
-    struct Signature{
-        uint64 S;
-        uint64 R8x;
-        uint64 R8y;
-    }
- 
     struct Order {
-        PublicKey sellerPubkey;
-        uint64 encryptedAmount;
-        Signature amountSignedBySeller;
+        uint256 Ax;
+        uint256 Ay;
+        uint256 S;
+        uint256 R8x;
+        uint256 R8y;
+        uint256 encryptedAmount;
     }
 
     IRouterClient router;
     LinkTokenInterface linkToken;
-    
+
     mapping(uint64 => bool) public whitelistedChains;
-    mapping(address => Order) public sellers;
-    
+    mapping(bytes32 => Order) public requestedOrders;
+
     error NotEnoughBalance(uint256 currentBalance, uint256 calculatedFees); 
     error DestinationChainNotWhitelisted(uint64 destinationChainSelector);
     error NothingToWithdraw();
-    
+
     event OrderInfoSent(
         bytes32 indexed messageId,
         uint64 destinationChainSelector,
         address indexed receiver,
-        PublicKey sellerPubkey,
-        uint64 encryptedAmount,
-        Signature amountSignedBySeller,
+        uint256 Ax,
+        uint256 Ay,
+        uint256 encryptedAmount,
+        uint256 S,
+        uint256 R8x,
+        uint256 R8y,
         uint256 ccipFees
     );
     
@@ -56,39 +51,9 @@ contract Buyer is OwnerIsCreator, CCIPReceiver {
         _;
     }
 
-    constructor(address _router, address _link) CCIPReceiver(address(router)) {
+    constructor(address _router, address _link) CCIPReceiver(_router) {
         router = IRouterClient(_router);
         linkToken = LinkTokenInterface(_link);
-    }
-   
-    /**
-     *   Function to set an order for a seller
-     */
-    function setOrder(
-        address sellerAddress,
-        uint64 pubkeyAx, uint64 pubkeyAy,
-        uint64 encryptedAmount,
-        uint64 signatureS, uint64 signatureR8x, uint64 signatureR8y
-    ) public {
-        // Create PublicKey struct
-        PublicKey memory pubkey = PublicKey({
-            Ax: pubkeyAx,
-            Ay: pubkeyAy
-        });
-
-        // Create Signature struct
-        Signature memory signature = Signature({
-            S: signatureS,
-            R8x: signatureR8x,
-            R8y: signatureR8y
-        });
-
-        // Create Order struct and assign it to the mapping
-        sellers[sellerAddress] = Order({
-            sellerPubkey: pubkey,
-            encryptedAmount: encryptedAmount,
-            amountSignedBySeller: signature
-        });
     }
 
     function whitelistChain(uint64 _destinationChainSelector) external onlyOwner {
@@ -102,28 +67,34 @@ contract Buyer is OwnerIsCreator, CCIPReceiver {
     /*
         Sends order information to a specified destination chain using CCIP
     */
-    function sendOrderInfoViaCCIP(
-        uint64 destinationChainSelector,
-        address receiver,
-        PublicKey memory sellerPubkey,
-        uint64 encryptedAmount,
-        Signature memory amountSignedBySeller
+    function sendOrder(
+        address sellerAddress,
+        uint64 sellerChainSelector,
+        uint256 pubkeyAx,
+        uint256 pubkeyAy,
+        uint256 encryptedAmount,
+        uint256 signatureS, 
+        uint256 signatureR8x,
+        uint256 signatureR8y
     ) 
         external
         onlyOwner
-        onlyWhitelistedChain(destinationChainSelector)
+        onlyWhitelistedChain(sellerChainSelector)
         returns (bytes32 messageId) 
     {
         // Encode the order information
         bytes memory encodedOrderInfo = abi.encode(
-            sellerPubkey,
-            encryptedAmount,
-            amountSignedBySeller
+            pubkeyAx,
+            pubkeyAy,
+            signatureS,
+            signatureR8x,
+            signatureR8y,
+            encryptedAmount
         );
 
         // Prepare the CCIP message
         Client.EVM2AnyMessage memory ccipMessage = Client.EVM2AnyMessage({
-            receiver: abi.encode(receiver),
+            receiver: abi.encode(sellerAddress),
             data: encodedOrderInfo,
             tokenAmounts: new Client.EVMTokenAmount[](0), // No token transfer
             extraArgs: Client._argsToBytes(
@@ -131,34 +102,37 @@ contract Buyer is OwnerIsCreator, CCIPReceiver {
             ),
             feeToken: address(linkToken)
         });
-        
+
         // Calculate and verify the CCIP fees
-        uint256 ccipFees = router.getFee(destinationChainSelector, ccipMessage);
+        uint256 ccipFees = router.getFee(sellerChainSelector, ccipMessage);
         if (ccipFees > linkToken.balanceOf(address(this))) {
             revert NotEnoughBalance(linkToken.balanceOf(address(this)), ccipFees);
         }
 
         // Approve and process the CCIP fee payment
         linkToken.approve(address(router), ccipFees);
-        
+
         // Initiate the CCIP order information transfer
-        messageId = router.ccipSend(destinationChainSelector, ccipMessage); 
-        
+        messageId = router.ccipSend(sellerChainSelector, ccipMessage); 
+
         // Emit an event to log the order info sending details
         emit OrderInfoSent(
             messageId,
-            destinationChainSelector,
-            receiver,
-            sellerPubkey,
+            sellerChainSelector,
+            sellerAddress,
+            pubkeyAx,
+            pubkeyAy,
             encryptedAmount,
-            amountSignedBySeller,
+            signatureS,
+            signatureR8x,
+            signatureR8y,
             ccipFees
         );
     }
 
     function _ccipReceive(
         Client.Any2EVMMessage memory any2EvmMessage
-    ) internal override{
+    ) internal override {
         
         //
     }

@@ -9,21 +9,14 @@ import {CCIPReceiver} from "@chainlink/contracts-ccip/src/v0.8/ccip/applications
 
 contract Seller is OwnerIsCreator, CCIPReceiver {
     // Event emitted when a message is received from another chain.
-    struct Signature{
-        uint64 R8x;
-        uint64 R8y;
-        uint64 S;
-    }
-
-    struct PublicKey{
-        uint64 Ax;
-        uint64 Ay;
-    }
 
     struct Order {
-        PublicKey sellerPubkey;
-        uint64 encryptedAmount;
-        Signature amountSignedBySeller;
+        uint256 Ax;
+        uint256 Ay;
+        uint256 S;
+        uint256 R8x;
+        uint256 R8y;
+        uint256 encryptedAmount;
     }
 
     event MessageReceived(
@@ -45,7 +38,7 @@ contract Seller is OwnerIsCreator, CCIPReceiver {
     uint64 publicKey;
     mapping(bytes32 => Order) orderBook;
 
-    constructor(address _router, address _link) CCIPReceiver(address(router)) {
+    constructor(address _router, address _link) CCIPReceiver(_router) {
         link = LinkTokenInterface(_link);
         router = IRouterClient(_router);
         link.approve(address(router), type(uint256).max);
