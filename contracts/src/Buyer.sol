@@ -6,7 +6,7 @@ import {IRouterClient} from "@chainlink/contracts-ccip/src/v0.8/ccip/interfaces/
 import {Client} from "@chainlink/contracts-ccip/src/v0.8/ccip/libraries/Client.sol";
 import {LinkTokenInterface} from "@chainlink/contracts-ccip/src/v0.8/shared/interfaces/LinkTokenInterface.sol";
 import {CCIPReceiver} from "@chainlink/contracts-ccip/src/v0.8/ccip/applications/CCIPReceiver.sol";
-import {Groth16Verifier} from "./CanFillOrder_verifier.sol";
+import {IERC20} from "@chainlink/contracts-ccip/src/v0.8/vendor/openzeppelin-solidity/v4.8.0/contracts/token/ERC20/IERC20.sol";
 
 /**
  * A contract that represents the functionality of a Buyer in a supply-chain context, where there are some 
@@ -32,6 +32,10 @@ contract Buyer is OwnerIsCreator, CCIPReceiver {
     error NotEnoughBalance(uint256 currentBalance, uint256 calculatedFees); 
     error DestinationChainNotWhitelisted(uint64 destinationChainSelector);
     error NothingToWithdraw();
+    error FailedToWithdrawEth(address owner, address target, uint256 value); // Used when the withdrawal of Ether fails.
+    error DestinationChainNotAllowlisted(uint64 destinationChainSelector); // Used when the destination chain has not been allowlisted by the contract owner.
+    error SourceChainNotAllowlisted(uint64 sourceChainSelector); // Used when the source chain has not been allowlisted by the contract owner.
+    error SenderNotAllowlisted(address sender); // Used when the sender has not been allowlisted by the contract owner.
 
     event OrderInfoSent(
         bytes32 indexed messageId,
@@ -44,6 +48,10 @@ contract Buyer is OwnerIsCreator, CCIPReceiver {
         uint256 R8x,
         uint256 R8y,
         uint256 ccipFees
+    );
+    
+    event DidSomething(
+        address sender
     );
     
     modifier onlyWhitelistedChain(uint64 _destinationChainSelector) {
@@ -136,5 +144,40 @@ contract Buyer is OwnerIsCreator, CCIPReceiver {
     ) internal override {
         
         //
+    }
+    
+    /// @notice Allows the contract owner to withdraw the entire balance of Ether from the contract.
+    /// @dev This function reverts if there are no funds to withdraw or if the transfer fails.
+    /// It should only be callable by the owner of the contract.
+    /// @param _beneficiary The address to which the Ether should be sent.
+    function withdraw(address _beneficiary) public onlyOwner {
+        // Retrieve the balance of this contract
+        uint256 amount = address(this).balance;
+
+        // Revert if there is nothing to withdraw
+        if (amount == 0) revert NothingToWithdraw();
+
+        // Attempt to send the funds, capturing the success status and discarding any return data
+        (bool sent, ) = _beneficiary.call{value: amount}("");
+
+        // Revert if the send failed, with information about the attempted transfer
+        if (!sent) revert FailedToWithdrawEth(msg.sender, _beneficiary, amount);
+    }
+
+    /// @notice Allows the owner of the contract to withdraw all tokens of a specific ERC20 token.
+    /// @dev This function reverts with a 'NothingToWithdraw' error if there are no tokens to withdraw.
+    /// @param _beneficiary The address to which the tokens will be sent.
+    /// @param _token The contract address of the ERC20 token to be withdrawn.
+    function withdrawToken(
+        address _beneficiary,
+        address _token
+    ) public onlyOwner {
+        // Retrieve the balance of this contract
+        uint256 amount = IERC20(_token).balanceOf(address(this));
+
+        // Revert if there is nothing to withdraw
+        if (amount == 0) revert NothingToWithdraw();
+
+        IERC20(_token).transfer(_beneficiary, amount);
     }
 }
