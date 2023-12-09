@@ -6,3 +6,7 @@ libs = ['node_modules', 'lib']
 fs_permissions = [
     { access = "read", path = "lib/foundry-chainlink-toolkit/out"}
 ]
+    
+[rpc_endpoints]
+bsc = "$BSC_RPC_URL"
+sep = "$SEPOLIA_RPC_URL"
