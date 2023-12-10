@@ -3,15 +3,16 @@ pragma solidity ^0.8.13;
 
 import {Script, console2} from "forge-std/Script.sol";
 
+import {Helper} from "../src/Helper.sol";
 import {Seller} from "../src/Seller.sol";
 
-contract DeploySeller is Script {
+contract DeploySeller is Script, Helper {
     function setUp() public {}
 
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        address router = vm.envAddress("SEPOLIA_CCIP_ROUTER_ADDRESS");
-        address link = vm.envAddress("SEPOLIA_CCIP_LINK_ADDRESS");
+        address router = routerEthereumSepolia;
+        address link = linkEthereumSepolia;
         vm.startBroadcast(deployerPrivateKey);
         
         Seller seller = new Seller(router, link);

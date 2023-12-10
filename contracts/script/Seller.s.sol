@@ -13,7 +13,7 @@ contract LoadSeller is Script, Helper {
         vm.startBroadcast(deployerPrivateKey);
         
         LinkTokenInterface(linkEthereumSepolia).transfer(
-            vm.envAddress("BUYER_CONTRACT_ADDRESS"), 
+            vm.envAddress("SELLER_CONTRACT_ADDRESS"), 
             1000000000000000000
         );
 
@@ -26,7 +26,7 @@ contract DrainSeller is Script, Helper {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
         Buyer(
-            vm.envAddress("BUYER_CONTRACT_ADDRESS")
+            vm.envAddress("SELLER_CONTRACT_ADDRESS")
         ).withdrawToken(
             vm.envAddress("OWNER_ADDR"),
             linkEthereumSepolia

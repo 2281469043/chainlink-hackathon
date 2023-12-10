@@ -35,14 +35,14 @@ contract DrainBuyer is Script, Helper {
     }
 }
 
-contract TestSendOrderOnlyAddress is Script, Helper {
+contract TestSendOrderStrNoEncode is Script, Helper {
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
         bytes32 messageId = Buyer(
             vm.envAddress("BUYER_CONTRACT_ADDRESS")
-        ).testCCIPRealV2(
+        ).testCCIPStrNoEncode(
             vm.envAddress("SELLER_CONTRACT_ADDRESS"),
             chainIdEthereumSepolia
         );
@@ -65,6 +65,28 @@ contract TestSendOrderStr is Script, Helper {
             vm.envAddress("BUYER_CONTRACT_ADDRESS")
         ).testCCIPStr(
             vm.envAddress("SELLER_CONTRACT_ADDRESS"),
+            chainIdEthereumSepolia,
+            "I am a different string"
+        );
+
+        console2.log(
+            "You can now monitor the status of your Chainlink CCIP Message via https://ccip.chain.link using CCIP Message ID: "
+        );
+        console2.logBytes32(messageId);
+
+        vm.stopBroadcast();
+    }
+}
+
+contract TestSendOrderRealNoInput is Script, Helper {
+    function run() public {
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
+
+        bytes32 messageId = Buyer(
+            vm.envAddress("BUYER_CONTRACT_ADDRESS")
+        ).testCCIPArgsNoInput(
+            vm.envAddress("SELLER_CONTRACT_ADDRESS"),
             chainIdEthereumSepolia
         );
 
@@ -77,17 +99,20 @@ contract TestSendOrderStr is Script, Helper {
     }
 }
 
-contract TestSendOrderOneInput is Script, Helper {
+contract TestSendOrderReal is Script, Helper {
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
         bytes32 messageId = Buyer(
             vm.envAddress("BUYER_CONTRACT_ADDRESS")
-        ).testCCIPRealV3(
+        ).testCCIPArgs(
             vm.envAddress("SELLER_CONTRACT_ADDRESS"),
             chainIdEthereumSepolia,
-            11112312
+            121231,
+            88812312,
+            1392310283,
+            132458848
         );
 
         console2.log(
