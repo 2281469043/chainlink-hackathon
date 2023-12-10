@@ -30,7 +30,7 @@ export default function EncryptRequest() {
             <CardTitle>Encrypt Request</CardTitle>
             <TextInput label="Public Key" value={publicKey} onChange={setPublicKey} />
             <TextInput label="Requested Amount" value={request} onChange={setRequest} />
-            <TextInput label="Encrypted Message" value={encryptedMessage} disabled />
+            <TextInput label="Ciphertext" value={encryptedMessage} disabled />
         </Card>
     );
 }

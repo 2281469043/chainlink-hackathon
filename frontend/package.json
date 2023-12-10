@@ -11,7 +11,7 @@
   "dependencies": {
     "circomlibjs": "^0.1.7",
     "connectkit": "^1.5.3",
-    "eth-crypto": "^2.6.0",
+    "eth-sig-util": "^3.0.1",
     "next": "14.0.4",
     "react": "^18",
     "react-dom": "^18",

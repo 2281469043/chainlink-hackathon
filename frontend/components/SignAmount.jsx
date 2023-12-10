@@ -26,7 +26,10 @@ export default function SignAmount() {
                 const msgF = eddsa.babyJub.F.e(msg);
                 const signature = eddsa.signMiMCSponge(privateKey, msgF);
 
-                setSignature(signature);
+                setSignature({
+                    ...signature,
+                    amount: amount
+                });
             }
         })()
     }, [eddsa, amount, privateKey]);
@@ -35,7 +38,8 @@ export default function SignAmount() {
     const formattedSignature = signature ? JSON.stringify({
         R8x: Buffer.from(signature.R8[0]).toString('hex'),
         R8y: Buffer.from(signature.R8[1]).toString('hex'),
-        S: signature.S.toString(16)
+        S: signature.S.toString(16),
+        amount: signature.amount
     }) : '';
 
     return (
