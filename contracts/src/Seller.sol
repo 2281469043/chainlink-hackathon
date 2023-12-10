@@ -19,7 +19,6 @@ contract Seller is OwnerIsCreator, CCIPReceiver {
     error SourceChainNotAllowlisted(uint64 sourceChainSelector); // Used when the source chain has not been allowlisted by the contract owner.
     error SenderNotAllowlisted(address sender); // Used when the sender has not been allowlisted by the contract owner.
 
-
     struct Order {
         uint256 Ax;
         uint256 Ay;
