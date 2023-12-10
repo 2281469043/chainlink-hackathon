@@ -1,12 +1,13 @@
 "use client";
 
 import EncryptRequesst from '@/components/EncryptRequest'
-import FindPublicKey from '@/components/FindPublicKey'
 import ConnectWallet from '@/components/ConnectWallet';
 import SignAmount from '@/components/SignAmount';
 import { useAccount } from 'wagmi';
 import { useEffect, useState } from 'react';
 import DecryptRequest from '@/components/DecryptRequest';
+import GetEthereumPublicKey from '@/components/GetEthereumPublicKey';
+import GetCircomPublicKey from '@/components/GetCircomPublicKey';
 
 export default function Home() {
   const { address } = useAccount();
@@ -29,7 +30,8 @@ export default function Home() {
             <SignAmount />
             <EncryptRequesst />
             <DecryptRequest />
-            <FindPublicKey />
+            <GetEthereumPublicKey />
+            <GetCircomPublicKey />
           </div>
         )
       }

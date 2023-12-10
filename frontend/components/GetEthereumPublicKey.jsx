@@ -7,20 +7,20 @@ import CardTitle from './CardTitle';
 import { useAccount } from 'wagmi';
 import Button from './Button';
 
-export default function FindPublicKey() {
+export default function GetEthereumPublicKey() {
     const [publicKey, setPublicKey] = useState('');
     const { address } = useAccount();
 
     return (
         <Card>
-            <CardTitle>Find Public Key</CardTitle>
+            <CardTitle>Get Ethereum Public Key</CardTitle>
             <Button onClick={async () => {
                 window.ethereum.request({
                     method: "eth_getEncryptionPublicKey",
                     params: [address]
                 }).then(setPublicKey);
-            }}>Find</Button>
-            <TextInput label="Public Key" value={publicKey} onChange={setPublicKey} disabled />
+            }}>Get Key</Button>
+            <TextInput label="Ethereum Public Key" value={publicKey} onChange={setPublicKey} disabled />
         </Card>
     );
 }
