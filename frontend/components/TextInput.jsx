@@ -1,7 +1,9 @@
 export default function TextInput({
-    label,
-    value,
-    onChange,
+    label = '',
+    value = '',
+    onChange = () => { },
+    disabled = false,
+    placeholder = ''
 }) {
     return (
         <label className="form-control w-full">
@@ -9,8 +11,9 @@ export default function TextInput({
                 <span className="label-text">{label}</span>
             </div>
             <input
-                type="text" placeholder="Type here"
+                type="text" placeholder={placeholder}
                 className="input input-primary input-bordered w-full"
+                disabled={disabled}
                 value={value}
                 onChange={e => onChange(e.target.value)}
             />

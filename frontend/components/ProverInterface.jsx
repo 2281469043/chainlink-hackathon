@@ -2,14 +2,16 @@
 
 import TextInput from './TextInput';
 import { useState } from 'react';
+import Card from './Card';
+import CardTitle from './CardTitle';
 
 export default function ProverInterface() {
     const [input, setInput] = useState('');
 
     return (
-        <div>
-            <div className="text-2xl font-bold">Prover Interface</div>
+        <Card>
+            <CardTitle>Prover Interface</CardTitle>
             <TextInput label="test" value={input} onChange={setInput} />
-        </div>
+        </Card>
     );
 }

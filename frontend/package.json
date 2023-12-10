@@ -9,9 +9,15 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "connectkit": "^1.5.3",
+    "eth-crypto": "^2.6.0",
     "next": "14.0.4",
     "react": "^18",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "secp256k1": "^5.0.0",
+    "snarkjs": "^0.7.2",
+    "viem": "^1.19.13",
+    "wagmi": "^1.4.10"
   },
   "devDependencies": {
     "autoprefixer": "^10.0.1",
