@@ -6,7 +6,6 @@ import {Client} from "@chainlink/contracts-ccip/src/v0.8/ccip/libraries/Client.s
 import {IRouterClient} from "@chainlink/contracts-ccip/src/v0.8/ccip/interfaces/IRouterClient.sol";
 import {LinkTokenInterface} from "@chainlink/contracts-ccip/src/v0.8/shared/interfaces/LinkTokenInterface.sol";
 import {CCIPReceiver} from "@chainlink/contracts-ccip/src/v0.8/ccip/applications/CCIPReceiver.sol";
-import {IERC20} from "@chainlink/contracts-ccip/src/v0.8/vendor/openzeppelin-solidity/v4.8.0/contracts/token/ERC20/IERC20.sol";
 
 contract Seller is OwnerIsCreator, CCIPReceiver {
     // Event emitted when a message is received from another chain.
@@ -115,13 +114,9 @@ contract Seller is OwnerIsCreator, CCIPReceiver {
         address _token
     ) public onlyOwner {
         // Retrieve the balance of this contract
-        uint256 amount = IERC20(_token).balanceOf(address(this));
-
+        uint256 amount = LinkTokenInterface(_token).balanceOf(address(this));
         // Revert if there is nothing to withdraw
         if (amount == 0) revert NothingToWithdraw();
-
-        IERC20(_token).transfer(_beneficiary, amount);
+        LinkTokenInterface(_token).transfer(_beneficiary, amount);
     }
 }
-
-

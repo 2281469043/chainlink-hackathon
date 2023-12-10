@@ -1,12 +1,18 @@
 {
   "scripts": {
-    "deploy": "deply-seller && deploy-buyer",
+    "deploy": "yarn deply-seller && yarn deploy-buyer",
     "deploy-buyer": "source .env && forge script script/DeployBuyer.s.sol:DeployBuyer --rpc-url $BSC_RPC_URL --broadcast -vvvvv && node update-contract-address.js buyer",
-    "deploy-seller": "source .env && forge script script/DeploySeller.s.sol:DeploySeller --rpc-url $ETH_RPC_URL --broadcast -vvvvv && node update-contract-address.js seller",
+    "deploy-seller": "source .env && forge script script/DeploySeller.s.sol:DeploySeller --rpc-url $SEPOLIA_RPC_URL --broadcast -vvvvv && node update-contract-address.js seller",
+    "reset-buyer": "yarn drain-buyer && yarn deploy-buyer && yarn load-buyer",
     "load-buyer":"source .env && forge script script/Buyer.s.sol:LoadBuyer --rpc-url $BSC_RPC_URL --broadcast -vvvvv",
     "load-seller":"source .env && forge script script/Seller.s.sol:LoadSeller --rpc-url $SEPOLIA_RPC_URL --broadcast -vvvvv",
     "test-buyer-sendorder":"source .env && forge script script/Buyer.s.sol:TestSendOrder --rpc-url $BSC_RPC_URL --broadcast -vvvvv",
-    "drain-buyer":"source .env && forge script script/Buyer.s.sol:DrainBuyer --rpc-url $BSC_RPC_URL --broadcast -vvvvv"
+    "test-buyer-sendorder-str":"source .env && forge script script/Buyer.s.sol:TestSendOrderStr --rpc-url $BSC_RPC_URL --broadcast -vvvvv",
+    "test-buyer-sendorder-str-noencode":"source .env && forge script script/Buyer.s.sol:TestSendOrderStrNoEncode --rpc-url $BSC_RPC_URL --broadcast -vvvvv",
+    "test-buyer-sendorder-args-noinput":"source .env && forge script script/Buyer.s.sol:TestSendOrderRealNoInput --rpc-url $BSC_RPC_URL --broadcast -vvvvv",
+    "test-buyer-sendorder-args":"source .env && forge script script/Buyer.s.sol:TestSendOrderReal --rpc-url $BSC_RPC_URL --broadcast -vvvvv",
+    "drain-buyer":"source .env && forge script script/Buyer.s.sol:DrainBuyer --rpc-url $BSC_RPC_URL --broadcast -vvvvv",
+    "drain-seller":"source .env && forge script script/Seller.s.sol:DrainSeller --rpc-url $SEPOLIA_RPC_URL --broadcast -vvvvv"
   },
   "devDependencies": {
     "@chainlink/contracts": "^0.8.0",

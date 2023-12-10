@@ -6,7 +6,6 @@ import {IRouterClient} from "@chainlink/contracts-ccip/src/v0.8/ccip/interfaces/
 import {Client} from "@chainlink/contracts-ccip/src/v0.8/ccip/libraries/Client.sol";
 import {LinkTokenInterface} from "@chainlink/contracts-ccip/src/v0.8/shared/interfaces/LinkTokenInterface.sol";
 import {CCIPReceiver} from "@chainlink/contracts-ccip/src/v0.8/ccip/applications/CCIPReceiver.sol";
-import {IERC20} from "@chainlink/contracts-ccip/src/v0.8/vendor/openzeppelin-solidity/v4.8.0/contracts/token/ERC20/IERC20.sol";
 
 /**
  * A contract that represents the functionality of a Buyer in a supply-chain context, where there are some 
@@ -46,8 +45,7 @@ contract Buyer is OwnerIsCreator, CCIPReceiver {
         uint256 encryptedAmount,
         uint256 S,
         uint256 R8x,
-        uint256 R8y,
-        uint256 ccipFees
+        uint256 R8y
     );
     
     event Saysomething(
@@ -73,21 +71,7 @@ contract Buyer is OwnerIsCreator, CCIPReceiver {
         whitelistedChains[_destinationChainSelector] = false;
     }
     
-    function sayHello() external {
-        emit Saysomething(
-            "yes"
-        );
-        // return "Hello from the Buyer contract!";
-    }
-
-    function sayHello2() external onlyOwner {
-        emit Saysomething(
-            "yes"
-        );
-        // return "Hello from the Buyer contract!";
-    }
-
-    function testCCIPStr(
+    function testCCIPStrNoEncode(
         address sellerAddress,
         uint64 sellerChainSelector
     ) 
@@ -102,7 +86,7 @@ contract Buyer is OwnerIsCreator, CCIPReceiver {
             data: "I am a test string",
             tokenAmounts: new Client.EVMTokenAmount[](0), // No token transfer
             // extraArgs: Client._argsToBytes(
-            //     Client.EVMExtraArgsV1({gasLimit: 5_000_000})
+            //     Client.EVMExtraArgsV1({gasLimit: 2_000_000})
             // ),
             extraArgs: "",
             feeToken: address(linkToken)
@@ -126,7 +110,49 @@ contract Buyer is OwnerIsCreator, CCIPReceiver {
         );
     }
 
-    function testCCIPRealV2(
+    function testCCIPStr(
+        address sellerAddress,
+        uint64 sellerChainSelector,
+        string calldata inputStr
+    ) 
+        external
+        onlyOwner
+        // onlyWhitelistedChain(sellerChainSelector)
+        returns (bytes32 messageId) 
+    {
+        // Prepare the CCIP message
+        Client.EVM2AnyMessage memory ccipMessage = Client.EVM2AnyMessage({
+            receiver: abi.encode(sellerAddress),
+            // data: "I am a test string",
+            data: abi.encode(inputStr),
+            tokenAmounts: new Client.EVMTokenAmount[](0), // No token transfer
+            // extraArgs: Client._argsToBytes(
+            //     Client.EVMExtraArgsV1({gasLimit: 400_000})
+            // ),
+            extraArgs: "",
+            feeToken: address(linkToken)
+        });
+
+        // Calculate and verify the CCIP fees
+
+        // uint256 ccipFees = router.getFee(sellerChainSelector, ccipMessage);
+        // if (ccipFees > linkToken.balanceOf(address(this))) {
+        //     revert NotEnoughBalance(linkToken.balanceOf(address(this)), ccipFees);
+        // }
+
+        // Approve and process the CCIP fee payment
+        linkToken.approve(address(router), type(uint256).max);
+
+        // Initiate the CCIP order information transfer
+        messageId = router.ccipSend(sellerChainSelector, ccipMessage); 
+
+        // Emit an event to log the order info sending details
+        emit Saysomething(
+            "I sent a test message"
+        );
+    }
+
+    function testCCIPArgsNoInput(
         address sellerAddress,
         uint64 sellerChainSelector
     ) 
@@ -148,21 +174,21 @@ contract Buyer is OwnerIsCreator, CCIPReceiver {
             receiver: abi.encode(sellerAddress),
             data: encodedOrderInfo,
             tokenAmounts: new Client.EVMTokenAmount[](0), // No token transfer
-            extraArgs: Client._argsToBytes(
-                Client.EVMExtraArgsV1({gasLimit: 2_000_000})
-            ),
-            // extraArgs: "",
+            // extraArgs: Client._argsToBytes(
+            //     Client.EVMExtraArgsV1({gasLimit: 2_000_000})
+            // ),
+            extraArgs: "",
             feeToken: address(linkToken)
         });
 
         // Calculate and verify the CCIP fees
-        uint256 ccipFees = router.getFee(sellerChainSelector, ccipMessage);
-        if (ccipFees > linkToken.balanceOf(address(this))) {
-            revert NotEnoughBalance(linkToken.balanceOf(address(this)), ccipFees);
-        }
+        // uint256 ccipFees = router.getFee(sellerChainSelector, ccipMessage);
+        // if (ccipFees > linkToken.balanceOf(address(this))) {
+        //     revert NotEnoughBalance(linkToken.balanceOf(address(this)), ccipFees);
+        // }
 
         // Approve and process the CCIP fee payment
-        linkToken.approve(address(router), ccipFees);
+        linkToken.approve(address(router), type(uint256).max);
 
         // Initiate the CCIP order information transfer
         messageId = router.ccipSend(sellerChainSelector, ccipMessage); 
@@ -173,10 +199,13 @@ contract Buyer is OwnerIsCreator, CCIPReceiver {
         );
     }
 
-    function testCCIPRealV3(
+    function testCCIPArgs(
         address sellerAddress,
         uint64 sellerChainSelector,
-        uint256 oneInput
+        uint256 i,
+        uint256 ii,
+        uint256 iii,
+        uint256 iiii
     ) 
         external
         onlyOwner
@@ -186,31 +215,31 @@ contract Buyer is OwnerIsCreator, CCIPReceiver {
         bytes memory encodedOrderInfo = abi.encode(
             11,
             1,
-            oneInput,
-            12,
-            14,
-            12312312
+            i,
+            ii,
+            iii,
+            iiii
         );
         // Prepare the CCIP message
         Client.EVM2AnyMessage memory ccipMessage = Client.EVM2AnyMessage({
             receiver: abi.encode(sellerAddress),
             data: encodedOrderInfo,
             tokenAmounts: new Client.EVMTokenAmount[](0), // No token transfer
-            extraArgs: Client._argsToBytes(
-                Client.EVMExtraArgsV1({gasLimit: 2_000_000})
-            ),
-            // extraArgs: "",
+            // extraArgs: Client._argsToBytes(
+            //     Client.EVMExtraArgsV1({gasLimit: 2_000_000})
+            // ),
+            extraArgs: "",
             feeToken: address(linkToken)
         });
 
         // Calculate and verify the CCIP fees
-        uint256 ccipFees = router.getFee(sellerChainSelector, ccipMessage);
-        if (ccipFees > linkToken.balanceOf(address(this))) {
-            revert NotEnoughBalance(linkToken.balanceOf(address(this)), ccipFees);
-        }
+        // uint256 ccipFees = router.getFee(sellerChainSelector, ccipMessage);
+        // if (ccipFees > linkToken.balanceOf(address(this))) {
+        //     revert NotEnoughBalance(linkToken.balanceOf(address(this)), ccipFees);
+        // }
 
         // Approve and process the CCIP fee payment
-        linkToken.approve(address(router), ccipFees);
+        linkToken.approve(address(router), type(uint256).max);
 
         // Initiate the CCIP order information transfer
         messageId = router.ccipSend(sellerChainSelector, ccipMessage); 
@@ -236,7 +265,7 @@ contract Buyer is OwnerIsCreator, CCIPReceiver {
     ) 
         external
         onlyOwner
-        onlyWhitelistedChain(sellerChainSelector)
+        // onlyWhitelistedChain(sellerChainSelector)
         returns (bytes32 messageId) 
     {
         // Encode the order information
@@ -254,38 +283,37 @@ contract Buyer is OwnerIsCreator, CCIPReceiver {
             receiver: abi.encode(sellerAddress),
             data: encodedOrderInfo,
             tokenAmounts: new Client.EVMTokenAmount[](0), // No token transfer
-            // extraArgs: "",
-            extraArgs: Client._argsToBytes(
-                Client.EVMExtraArgsV1({gasLimit: 2_000_000})
-            ),
+            extraArgs: "",
+            // extraArgs: Client._argsToBytes(
+            //     Client.EVMExtraArgsV1({gasLimit: 2_000_000})
+            // ),
             feeToken: address(linkToken)
         });
 
         // Calculate and verify the CCIP fees
-        uint256 ccipFees = router.getFee(sellerChainSelector, ccipMessage);
-        if (ccipFees > linkToken.balanceOf(address(this))) {
-            revert NotEnoughBalance(linkToken.balanceOf(address(this)), ccipFees);
-        }
+        // uint256 ccipFees = router.getFee(sellerChainSelector, ccipMessage);
+        // if (ccipFees > linkToken.balanceOf(address(this))) {
+        //     revert NotEnoughBalance(linkToken.balanceOf(address(this)), ccipFees);
+        // }
 
         // Approve and process the CCIP fee payment
-        linkToken.approve(address(router), ccipFees);
+        linkToken.approve(address(router), type(uint256).max);
 
         // Initiate the CCIP order information transfer
         messageId = router.ccipSend(sellerChainSelector, ccipMessage); 
 
         // Emit an event to log the order info sending details
-        emit OrderInfoSent(
-            messageId,
-            sellerChainSelector,
-            sellerAddress,
-            pubkeyAx,
-            pubkeyAy,
-            encryptedAmount,
-            signatureS,
-            signatureR8x,
-            signatureR8y,
-            ccipFees
-        );
+        // emit OrderInfoSent(
+        //     messageId,
+        //     sellerChainSelector,
+        //     sellerAddress,
+        //     pubkeyAx,
+        //     pubkeyAy,
+        //     encryptedAmount,
+        //     signatureS,
+        //     signatureR8x,
+        //     signatureR8y
+        // );
     }
 
     function _ccipReceive(
@@ -322,11 +350,9 @@ contract Buyer is OwnerIsCreator, CCIPReceiver {
         address _token
     ) public onlyOwner {
         // Retrieve the balance of this contract
-        uint256 amount = IERC20(_token).balanceOf(address(this));
-
+        uint256 amount = LinkTokenInterface(_token).balanceOf(address(this));
         // Revert if there is nothing to withdraw
         if (amount == 0) revert NothingToWithdraw();
-
-        IERC20(_token).transfer(_beneficiary, amount);
+        LinkTokenInterface(_token).transfer(_beneficiary, amount);
     }
 }
