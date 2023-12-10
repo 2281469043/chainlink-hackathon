@@ -13,23 +13,23 @@ async function encrypt(publicKey, message) {
 
 export default function EncryptRequest() {
     const [publicKey, setPublicKey] = useState('');
-    const [amount, setAmount] = useState('');
+    const [request, setRequest] = useState('');
     const [encryptedMessage, setEncryptedMessage] = useState('');
 
     useEffect(() => {
         (async () => {
-            if (publicKey && message) {
-                const data = await encrypt(publicKey, amount);
+            if (publicKey && request) {
+                const data = await encrypt(publicKey, request);
                 setEncryptedMessage(JSON.stringify(data));
             }
         })()
-    }, [publicKey, amount]);
+    }, [publicKey, request]);
 
     return (
         <Card>
             <CardTitle>Encrypt Request</CardTitle>
             <TextInput label="Public Key" value={publicKey} onChange={setPublicKey} />
-            <TextInput label="Requested Amount" value={amount} onChange={setAmount} />
+            <TextInput label="Requested Amount" value={request} onChange={setRequest} />
             <TextInput label="Encrypted Message" value={encryptedMessage} disabled />
         </Card>
     );

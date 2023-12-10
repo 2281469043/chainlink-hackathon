@@ -1,9 +1,9 @@
 "use client";
 
-import ProverInterface from '@/components/ProverInterface'
 import EncryptRequesst from '@/components/EncryptRequest'
 import FindPublicKey from '@/components/FindPublicKey'
 import ConnectWallet from '@/components/ConnectWallet';
+import SignAmount from '@/components/SignAmount';
 
 export default function Home() {
   return (
@@ -12,7 +12,7 @@ export default function Home() {
         <ConnectWallet />
       </div>
       <div className='grid grid-cols-3 gap-4 m-4'>
-        <ProverInterface />
+        <SignAmount />
         <EncryptRequesst />
         <FindPublicKey />
       </div>
