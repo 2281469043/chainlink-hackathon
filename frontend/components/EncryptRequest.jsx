@@ -7,29 +7,29 @@ import CardTitle from './CardTitle';
 
 async function encrypt(publicKey, message) {
     const response = await fetch(`/api/encrypt?publicKey=${publicKey}&message=${message}`);
-    const data = await response.text();
+    const data = await response.json();
     return data;
 }
 
 export default function EncryptRequest() {
     const [publicKey, setPublicKey] = useState('');
-    const [message, setMessage] = useState('');
+    const [amount, setAmount] = useState('');
     const [encryptedMessage, setEncryptedMessage] = useState('');
 
     useEffect(() => {
         (async () => {
             if (publicKey && message) {
-                const data = await encrypt(publicKey, message);
+                const data = await encrypt(publicKey, amount);
                 setEncryptedMessage(JSON.stringify(data));
             }
         })()
-    }, [publicKey, message]);
+    }, [publicKey, amount]);
 
     return (
         <Card>
             <CardTitle>Encrypt Request</CardTitle>
             <TextInput label="Public Key" value={publicKey} onChange={setPublicKey} />
-            <TextInput label="Message" value={message} onChange={setMessage} />
+            <TextInput label="Requested Amount" value={amount} onChange={setAmount} />
             <TextInput label="Encrypted Message" value={encryptedMessage} disabled />
         </Card>
     );
