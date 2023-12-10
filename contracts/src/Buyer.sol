@@ -1,32 +1,56 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity ^0.8.19;
 
 import {OwnerIsCreator} from "@chainlink/contracts-ccip/src/v0.8/shared/access/OwnerIsCreator.sol";
 import {IRouterClient} from "@chainlink/contracts-ccip/src/v0.8/ccip/interfaces/IRouterClient.sol";
 import {Client} from "@chainlink/contracts-ccip/src/v0.8/ccip/libraries/Client.sol";
 import {LinkTokenInterface} from "@chainlink/contracts-ccip/src/v0.8/shared/interfaces/LinkTokenInterface.sol";
 import {CCIPReceiver} from "@chainlink/contracts-ccip/src/v0.8/ccip/applications/CCIPReceiver.sol";
+import {Groth16Verifier} from "./Verifier.sol";
 
-/**
- * A contract that represents the functionality of a Buyer in a supply-chain context, where there are some 
- secret information (the amount of supply) to be send to the seller that is operating in another chain.
- */
 contract Buyer is OwnerIsCreator, CCIPReceiver {
 
-    struct Order {
+    enum OperationType{ 
+        MESSAGE, 
+        REQUEST_PUBKEY,
+        PROVIDE_PUBKEY,
+        REQUEST_PROOF,
+        PROVIDE_PROOF
+    }
+    
+    struct CircomPubkey {
         uint256 Ax;
         uint256 Ay;
-        uint256 S;
-        uint256 R8x;
-        uint256 R8y;
-        uint256 encryptedAmount;
     }
 
-    IRouterClient router;
-    LinkTokenInterface linkToken;
+    struct EthPubkey {
+        bytes32 value;
+    }
 
-    mapping(uint64 => bool) public whitelistedChains;
-    mapping(bytes32 => Order) public requestedOrders;
+    struct TradeMessage {
+        OperationType operation;
+        CircomPubkey circomPubkey;
+        EthPubkey ethPubkey;
+        // uint256 Ax;
+        // uint256 Ay;
+        bytes encryptedRequest;
+        string message;
+        bytes proof;
+    }
+
+    event MessageReceived(
+        bytes32 indexed messageId, // The unique ID of the message.
+        uint64 indexed sourceChainSelector, // The chain selector of the source chain.
+        address sender, // The address of the sender from the source chain.
+        OperationType operation,
+        string text // The text that was received.
+    );
+
+    event MessageSent(
+        address receiver, // The address of the sender from the source chain.
+        OperationType operation,
+        string text // The text that was received.
+    );
 
     error NotEnoughBalance(uint256 currentBalance, uint256 calculatedFees); 
     error DestinationChainNotWhitelisted(uint64 destinationChainSelector);
@@ -35,22 +59,16 @@ contract Buyer is OwnerIsCreator, CCIPReceiver {
     error DestinationChainNotAllowlisted(uint64 destinationChainSelector); // Used when the destination chain has not been allowlisted by the contract owner.
     error SourceChainNotAllowlisted(uint64 sourceChainSelector); // Used when the source chain has not been allowlisted by the contract owner.
     error SenderNotAllowlisted(address sender); // Used when the sender has not been allowlisted by the contract owner.
+    error UnknownOperation(); // Used when the sender has not been allowlisted by the contract owner.
 
-    event OrderInfoSent(
-        bytes32 indexed messageId,
-        uint64 destinationChainSelector,
-        address indexed receiver,
-        uint256 Ax,
-        uint256 Ay,
-        uint256 encryptedAmount,
-        uint256 S,
-        uint256 R8x,
-        uint256 R8y
-    );
-    
-    event Saysomething(
-        bytes32 data
-    );
+    LinkTokenInterface link;
+    IRouterClient router;
+    CircomPubkey circomPubkey;
+    EthPubkey ethPubkey;
+    bytes32 private lastReceivedMessageId; // Store the last received messageId.
+    mapping(bytes32 => TradeMessage) public messageStack;
+    address verifier;
+    mapping(uint64 => bool) public whitelistedChains;
     
     modifier onlyWhitelistedChain(uint64 _destinationChainSelector) {
         if (!whitelistedChains[_destinationChainSelector])
@@ -58,9 +76,13 @@ contract Buyer is OwnerIsCreator, CCIPReceiver {
         _;
     }
 
-    constructor(address _router, address _link) CCIPReceiver(_router) {
+    constructor( 
+        address _router, 
+        address _link
+    ) CCIPReceiver(_router) {
         router = IRouterClient(_router);
-        linkToken = LinkTokenInterface(_link);
+        link = LinkTokenInterface(_link);
+        verifier = address(new Groth16Verifier());
     }
 
     function whitelistChain(uint64 _destinationChainSelector) external onlyOwner {
@@ -70,259 +92,145 @@ contract Buyer is OwnerIsCreator, CCIPReceiver {
     function denylistChain(uint64 _destinationChainSelector) external onlyOwner {
         whitelistedChains[_destinationChainSelector] = false;
     }
-    
-    function testCCIPStrNoEncode(
-        address sellerAddress,
-        uint64 sellerChainSelector
-    ) 
-        external
-        onlyOwner
-        // onlyWhitelistedChain(sellerChainSelector)
-        returns (bytes32 messageId) 
-    {
-        // Prepare the CCIP message
-        Client.EVM2AnyMessage memory ccipMessage = Client.EVM2AnyMessage({
-            receiver: abi.encode(sellerAddress),
-            data: "I am a test string",
-            tokenAmounts: new Client.EVMTokenAmount[](0), // No token transfer
-            // extraArgs: Client._argsToBytes(
-            //     Client.EVMExtraArgsV1({gasLimit: 2_000_000})
-            // ),
-            extraArgs: "",
-            feeToken: address(linkToken)
-        });
 
-        // Calculate and verify the CCIP fees
-        uint256 ccipFees = router.getFee(sellerChainSelector, ccipMessage);
-        if (ccipFees > linkToken.balanceOf(address(this))) {
-            revert NotEnoughBalance(linkToken.balanceOf(address(this)), ccipFees);
-        }
-
-        // Approve and process the CCIP fee payment
-        linkToken.approve(address(router), ccipFees);
-
-        // Initiate the CCIP order information transfer
-        messageId = router.ccipSend(sellerChainSelector, ccipMessage); 
-
-        // Emit an event to log the order info sending details
-        emit Saysomething(
-            "I sent a test message"
-        );
+    function setEthPubkey(
+        bytes32 ethPubkeyValue
+    ) public onlyOwner {
+        ethPubkey = EthPubkey({value: ethPubkeyValue});
     }
 
-    function testCCIPStr(
-        address sellerAddress,
-        uint64 sellerChainSelector,
-        string calldata inputStr
-    ) 
-        external
-        onlyOwner
-        // onlyWhitelistedChain(sellerChainSelector)
-        returns (bytes32 messageId) 
-    {
-        // Prepare the CCIP message
-        Client.EVM2AnyMessage memory ccipMessage = Client.EVM2AnyMessage({
-            receiver: abi.encode(sellerAddress),
-            // data: "I am a test string",
-            data: abi.encode(inputStr),
-            tokenAmounts: new Client.EVMTokenAmount[](0), // No token transfer
-            // extraArgs: Client._argsToBytes(
-            //     Client.EVMExtraArgsV1({gasLimit: 400_000})
-            // ),
-            extraArgs: "",
-            feeToken: address(linkToken)
+    function setCircomPubkey(
+        uint256 Ax,
+        uint256 Ay
+    ) public onlyOwner {
+        circomPubkey = CircomPubkey({
+            Ax:Ax,
+            Ay:Ay
         });
-
-        // Calculate and verify the CCIP fees
-
-        // uint256 ccipFees = router.getFee(sellerChainSelector, ccipMessage);
-        // if (ccipFees > linkToken.balanceOf(address(this))) {
-        //     revert NotEnoughBalance(linkToken.balanceOf(address(this)), ccipFees);
-        // }
-
-        // Approve and process the CCIP fee payment
-        linkToken.approve(address(router), type(uint256).max);
-
-        // Initiate the CCIP order information transfer
-        messageId = router.ccipSend(sellerChainSelector, ccipMessage); 
-
-        // Emit an event to log the order info sending details
-        emit Saysomething(
-            "I sent a test message"
-        );
     }
 
-    function testCCIPArgsNoInput(
+    function requestEthPubkey(
         address sellerAddress,
-        uint64 sellerChainSelector
+        uint64 sellerChainId
     ) 
-        external
-        onlyOwner
-        // onlyWhitelistedChain(sellerChainSelector)
+        external 
+        onlyOwner 
+        onlyWhitelistedChain(sellerChainId)
         returns (bytes32 messageId) 
     {
-        bytes memory encodedOrderInfo = abi.encode(
-            11,
-            1,
-            1212312,
-            12,
-            14,
-            12312312
-        );
-        // Prepare the CCIP message
-        Client.EVM2AnyMessage memory ccipMessage = Client.EVM2AnyMessage({
-            receiver: abi.encode(sellerAddress),
-            data: encodedOrderInfo,
-            tokenAmounts: new Client.EVMTokenAmount[](0), // No token transfer
-            // extraArgs: Client._argsToBytes(
-            //     Client.EVMExtraArgsV1({gasLimit: 2_000_000})
-            // ),
-            extraArgs: "",
-            feeToken: address(linkToken)
-        });
-
-        // Calculate and verify the CCIP fees
-        // uint256 ccipFees = router.getFee(sellerChainSelector, ccipMessage);
-        // if (ccipFees > linkToken.balanceOf(address(this))) {
-        //     revert NotEnoughBalance(linkToken.balanceOf(address(this)), ccipFees);
-        // }
-
-        // Approve and process the CCIP fee payment
-        linkToken.approve(address(router), type(uint256).max);
-
-        // Initiate the CCIP order information transfer
-        messageId = router.ccipSend(sellerChainSelector, ccipMessage); 
-
-        // Emit an event to log the order info sending details
-        emit Saysomething(
-            "I sent a test message"
-        );
-    }
-
-    function testCCIPArgs(
-        address sellerAddress,
-        uint64 sellerChainSelector,
-        uint256 i,
-        uint256 ii,
-        uint256 iii,
-        uint256 iiii
-    ) 
-        external
-        onlyOwner
-        // onlyWhitelistedChain(sellerChainSelector)
-        returns (bytes32 messageId) 
-    {
-        bytes memory encodedOrderInfo = abi.encode(
-            11,
-            1,
-            i,
-            ii,
-            iii,
-            iiii
-        );
-        // Prepare the CCIP message
-        Client.EVM2AnyMessage memory ccipMessage = Client.EVM2AnyMessage({
-            receiver: abi.encode(sellerAddress),
-            data: encodedOrderInfo,
-            tokenAmounts: new Client.EVMTokenAmount[](0), // No token transfer
-            // extraArgs: Client._argsToBytes(
-            //     Client.EVMExtraArgsV1({gasLimit: 2_000_000})
-            // ),
-            extraArgs: "",
-            feeToken: address(linkToken)
-        });
-
-        // Calculate and verify the CCIP fees
-        // uint256 ccipFees = router.getFee(sellerChainSelector, ccipMessage);
-        // if (ccipFees > linkToken.balanceOf(address(this))) {
-        //     revert NotEnoughBalance(linkToken.balanceOf(address(this)), ccipFees);
-        // }
-
-        // Approve and process the CCIP fee payment
-        linkToken.approve(address(router), type(uint256).max);
-
-        // Initiate the CCIP order information transfer
-        messageId = router.ccipSend(sellerChainSelector, ccipMessage); 
-
-        // Emit an event to log the order info sending details
-        emit Saysomething(
-            "I sent a test message"
+        messageId = sendMessage(
+            sellerAddress,
+            sellerChainId,
+            TradeMessage({
+                operation: OperationType.REQUEST_PUBKEY,
+                ethPubkey: ethPubkey,
+                circomPubkey: circomPubkey,
+                encryptedRequest:"",
+                message:"",
+                proof:""
+            })
         );
     }
    
     /*
         Sends order information to a specified destination chain using CCIP
     */
-    function sendOrder(
+    function requestSupplyProof(
         address sellerAddress,
-        uint64 sellerChainSelector,
-        uint256 pubkeyAx,
-        uint256 pubkeyAy,
-        uint256 encryptedAmount,
-        uint256 signatureS, 
-        uint256 signatureR8x,
-        uint256 signatureR8y
+        uint64 sellerChainId,
+        bytes calldata encryptedMessage
     ) 
         external
+        onlyOwner
+        onlyWhitelistedChain(sellerChainId)
+        returns (bytes32 messageId) 
+    {
+        // Encode the order information
+        messageId = sendMessage(
+            sellerAddress,
+            sellerChainId,
+            TradeMessage({
+                operation: OperationType.REQUEST_PROOF,
+                ethPubkey: ethPubkey,
+                circomPubkey: circomPubkey,
+                encryptedRequest:encryptedMessage,
+                message:"",
+                proof:""
+            })
+        );
+    }
+    
+    function sendMessage(
+        address recipient,
+        uint64 recipientChainId,
+        TradeMessage memory payload
+    )
+        internal
         onlyOwner
         // onlyWhitelistedChain(sellerChainSelector)
         returns (bytes32 messageId) 
     {
-        // Encode the order information
-        bytes memory encodedOrderInfo = abi.encode(
-            pubkeyAx,
-            pubkeyAy,
-            signatureS,
-            signatureR8x,
-            signatureR8y,
-            encryptedAmount
-        );
 
         // Prepare the CCIP message
         Client.EVM2AnyMessage memory ccipMessage = Client.EVM2AnyMessage({
-            receiver: abi.encode(sellerAddress),
-            data: encodedOrderInfo,
+            receiver: abi.encode(recipient),
+            data: abi.encode(payload),
+            // data: abi.encode(message),
             tokenAmounts: new Client.EVMTokenAmount[](0), // No token transfer
             extraArgs: "",
-            // extraArgs: Client._argsToBytes(
-            //     Client.EVMExtraArgsV1({gasLimit: 2_000_000})
-            // ),
-            feeToken: address(linkToken)
+            feeToken: address(link)
         });
 
         // Calculate and verify the CCIP fees
-        // uint256 ccipFees = router.getFee(sellerChainSelector, ccipMessage);
-        // if (ccipFees > linkToken.balanceOf(address(this))) {
-        //     revert NotEnoughBalance(linkToken.balanceOf(address(this)), ccipFees);
+        // uint256 ccipFees = router.getFee(recipientChainId, ccipMessage);
+        // if (ccipFees > link.balanceOf(address(this))) {
+        //     revert NotEnoughBalance(link.balanceOf(address(this)), ccipFees);
         // }
 
-        // Approve and process the CCIP fee payment
-        linkToken.approve(address(router), type(uint256).max);
-
-        // Initiate the CCIP order information transfer
-        messageId = router.ccipSend(sellerChainSelector, ccipMessage); 
-
-        // Emit an event to log the order info sending details
-        // emit OrderInfoSent(
-        //     messageId,
-        //     sellerChainSelector,
-        //     sellerAddress,
-        //     pubkeyAx,
-        //     pubkeyAy,
-        //     encryptedAmount,
-        //     signatureS,
-        //     signatureR8x,
-        //     signatureR8y
-        // );
-    }
-
-    function _ccipReceive(
-        Client.Any2EVMMessage memory any2EvmMessage
-    ) internal override {
+        // // Approve and process the CCIP fee payment
+        // link.approve(address(router), ccipFees);
         
-        //
+        // https://ethereum.stackexchange.com/questions/156285/what-is-causing-arithmetic-over-underflow-when-link-transferfrom-is-called-for?newreg=509cdc7a0abe4e2a8a3a3d4aaf8cd8b8
+        link.approve(address(router), type(uint256).max);
+
+        messageId = router.ccipSend(recipientChainId, ccipMessage); 
+        messageStack[messageId] = payload;
+        emit MessageSent(
+            recipient,
+            payload.operation,
+            payload.message
+        );
     }
     
+    function _ccipReceive(
+        Client.Any2EVMMessage memory any2EvmMessage
+    ) 
+        internal 
+        override
+        onlyWhitelistedChain(any2EvmMessage.sourceChainSelector)
+    {
+        lastReceivedMessageId = any2EvmMessage.messageId; // fetch the messageId
+        TradeMessage memory tradeMessage = abi.decode(any2EvmMessage.data, (TradeMessage));
+        messageStack[any2EvmMessage.messageId] = tradeMessage;
+        emit MessageReceived(
+            any2EvmMessage.messageId,
+            any2EvmMessage.sourceChainSelector, // fetch the source chain identifier (aka selector)
+            abi.decode(any2EvmMessage.sender, (address)), // abi-decoding of the sender address,
+            tradeMessage.operation,
+            tradeMessage.message
+        );
+        if(tradeMessage.operation==OperationType.PROVIDE_PUBKEY){
+            // save pubkey
+            setEthPubkey(tradeMessage.ethPubkey.value);
+
+        }else if(tradeMessage.operation==OperationType.PROVIDE_PROOF){
+            // verify proof
+            verifyProof(tradeMessage.proof);
+        }else{
+            revert UnknownOperation();
+        }
+    }
+
     /// @notice Allows the contract owner to withdraw the entire balance of Ether from the contract.
     /// @dev This function reverts if there are no funds to withdraw or if the transfer fails.
     /// It should only be callable by the owner of the contract.
@@ -354,5 +262,16 @@ contract Buyer is OwnerIsCreator, CCIPReceiver {
         // Revert if there is nothing to withdraw
         if (amount == 0) revert NothingToWithdraw();
         LinkTokenInterface(_token).transfer(_beneficiary, amount);
+    }
+    
+    function verifyProof(
+        bytes memory payload 
+    ) public onlyOwner returns (bool isVerified) {
+        (bool success, bytes memory result) = verifier.call(payload);
+        if(!success){
+            isVerified = false;
+        } else {
+            isVerified = abi.decode(result, (bool));
+        }
     }
 }
