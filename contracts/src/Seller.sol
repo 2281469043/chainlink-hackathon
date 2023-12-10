@@ -8,8 +8,47 @@ import {LinkTokenInterface} from "@chainlink/contracts-ccip/src/v0.8/shared/inte
 import {CCIPReceiver} from "@chainlink/contracts-ccip/src/v0.8/ccip/applications/CCIPReceiver.sol";
 
 contract Seller is OwnerIsCreator, CCIPReceiver {
-    // Event emitted when a message is received from another chain.
 
+    enum OperationType{ 
+        MESSAGE, 
+        REQUEST_PUBKEY,
+        PROVIDE_PUBKEY,
+        REQUEST_PROOF,
+        PROVIDE_PROOF
+    }
+
+    struct CircomPubkey {
+        uint256 Ax;
+        uint256 Ay;
+    }
+
+    struct EthPubkey {
+        bytes32 value;
+    }
+
+    struct TradeMessage {
+        OperationType operation;
+        CircomPubkey circomPubkey;
+        EthPubkey ethPubkey;
+        bytes encryptedRequest;
+        string message;
+        bytes proof;
+    }
+
+    event MessageReceived(
+        bytes32 indexed messageId, // The unique ID of the message.
+        uint64 indexed sourceChainSelector, // The chain selector of the source chain.
+        address sender, // The address of the sender from the source chain.
+        OperationType operation,
+        string text // The text that was received.
+    );
+
+    event MessageSent(
+        address receiver, // The address of the sender from the source chain.
+        OperationType operation,
+        string message
+    );
+    
     error NotEnoughBalance(uint256 currentBalance, uint256 calculatedFees); 
     error DestinationChainNotWhitelisted(uint64 destinationChainSelector);
     error NothingToWithdraw();
@@ -17,74 +56,195 @@ contract Seller is OwnerIsCreator, CCIPReceiver {
     error DestinationChainNotAllowlisted(uint64 destinationChainSelector); // Used when the destination chain has not been allowlisted by the contract owner.
     error SourceChainNotAllowlisted(uint64 sourceChainSelector); // Used when the source chain has not been allowlisted by the contract owner.
     error SenderNotAllowlisted(address sender); // Used when the sender has not been allowlisted by the contract owner.
+    error UnknownOperation(); // Used when the sender has not been allowlisted by the contract owner.
+    error NoSupplyProofRequested(); // Used when the sender has not been allowlisted by the contract owner.
 
-    struct Order {
-        uint256 Ax;
-        uint256 Ay;
-        uint256 S;
-        uint256 R8x;
-        uint256 R8y;
-        uint256 encryptedAmount;
-    }
-
-    event MessageReceived(
-        bytes32 indexed messageId, // The unique ID of the message.
-        uint64 indexed sourceChainSelector, // The chain selector of the source chain.
-        address sender, // The address of the sender from the source chain.
-        string text // The text that was received.
-    );
-
-    event MessageSent(
-        address receiver, // The address of the sender from the source chain.
-        string text // The text that was received.
-    );
-    
-    bytes32 private lastReceivedMessageId; // Store the last received messageId.
-    string private lastReceivedMessage; // Store the last received text.
     LinkTokenInterface link;
     IRouterClient router;
-    uint64 publicKey;
-    mapping(bytes32 => Order) orderBook;
+    CircomPubkey circomPubkey;
+    EthPubkey ethPubkey;
+    bytes32 private lastReceivedMessageId; // Store the last received messageId.
+    mapping(bytes32 => TradeMessage) public messageStack;
+    bool public isSupplyProofRequested;
+    bytes32 private supplyProofRequestMessageId;
+    mapping(uint64 => bool) public whitelistedChains;
+    
+    modifier onlyWhitelistedChain(uint64 _destinationChainSelector) {
+        if (!whitelistedChains[_destinationChainSelector])
+            revert DestinationChainNotWhitelisted(_destinationChainSelector);
+        _;
+    }
 
-    constructor(address _router, address _link) CCIPReceiver(_router) {
+    constructor(
+        address _router,
+        address _link
+    ) CCIPReceiver(_router) {
         link = LinkTokenInterface(_link);
         router = IRouterClient(_router);
         link.approve(address(router), type(uint256).max);
     }
+
+    function whitelistChain(uint64 _destinationChainSelector) external onlyOwner {
+        whitelistedChains[_destinationChainSelector] = true;
+    }
+
+    function denylistChain(uint64 _destinationChainSelector) external onlyOwner {
+        whitelistedChains[_destinationChainSelector] = false;
+    }
+
+    function setEthPubkey(
+        bytes32 ethPubkeyValue
+    ) internal onlyOwner {
+        ethPubkey = EthPubkey({value: ethPubkeyValue});
+    }
+
+    function setCircomPubkey(
+        uint256 Ax,
+        uint256 Ay
+    ) internal onlyOwner {
+        circomPubkey = CircomPubkey({
+            Ax:Ax,
+            Ay:Ay
+        });
+    }
+
+    function provideEthPubkey(
+        address buyerAddress,
+        uint64 buyerChainId
+    )
+        internal
+        onlyOwner
+        returns (bytes32 messageId)
+    {
+        messageId = sendMessage(
+            buyerAddress,
+            buyerChainId,
+            TradeMessage({
+                operation: OperationType.PROVIDE_PUBKEY,
+                ethPubkey: ethPubkey,
+                circomPubkey: circomPubkey,
+                encryptedRequest:"",
+                message:"",
+                proof:""
+            })
+        );
+    }
     
-    function send(address receiver, string memory someText, uint64 destinationChainSelector) external {
-        Client.EVM2AnyMessage memory message = Client.EVM2AnyMessage({
-            receiver: abi.encode(receiver),
-            data: abi.encode(someText),
-            tokenAmounts: new Client.EVMTokenAmount[](0),
+    function setSupplyProofRequest(
+        bytes32 messageId
+    ) internal {
+        isSupplyProofRequested = true;
+        supplyProofRequestMessageId = messageId;
+    }
+    
+    function getSupplyProofRequestMessage()
+        public
+        onlyOwner
+        view
+        returns (TradeMessage memory)
+    {
+        if (isSupplyProofRequested){
+            return messageStack[supplyProofRequestMessageId];
+        } else {
+            revert NoSupplyProofRequested();
+        }
+    }
+    
+    function provideSupplyProof(
+        address buyerAddress,
+        uint64 buyerChainId,
+        bytes memory proof
+    )
+        public
+        onlyOwner
+        returns (bytes32 messageId)
+    {
+        messageId = sendMessage(
+            buyerAddress,
+            buyerChainId,
+            TradeMessage({
+                operation: OperationType.PROVIDE_PUBKEY,
+                ethPubkey: ethPubkey,
+                circomPubkey: circomPubkey,
+                encryptedRequest:"",
+                message:"",
+                proof:proof
+            })
+        );
+    }
+    
+    function sendMessage(
+        address recipient,
+        uint64 recipientChainId,
+        TradeMessage memory payload
+    )
+        internal
+        onlyOwner
+        // onlyWhitelistedChain(sellerChainSelector)
+        returns (bytes32 messageId) 
+    {
+
+        // Prepare the CCIP message
+        Client.EVM2AnyMessage memory ccipMessage = Client.EVM2AnyMessage({
+            receiver: abi.encode(recipient),
+            data: abi.encode(payload),
+            // data: abi.encode(message),
+            tokenAmounts: new Client.EVMTokenAmount[](0), // No token transfer
             extraArgs: "",
             feeToken: address(link)
         });
 
-        IRouterClient(router).ccipSend(destinationChainSelector, message);
+        // Calculate and verify the CCIP fees
+        uint256 ccipFees = router.getFee(recipientChainId, ccipMessage);
+        if (ccipFees > link.balanceOf(address(this))) {
+            revert NotEnoughBalance(link.balanceOf(address(this)), ccipFees);
+        }
 
+        // Approve and process the CCIP fee payment
+        link.approve(address(router), ccipFees);
+        
+        // https://ethereum.stackexchange.com/questions/156285/what-is-causing-arithmetic-over-underflow-when-link-transferfrom-is-called-for?newreg=509cdc7a0abe4e2a8a3a3d4aaf8cd8b8
+        // link.approve(address(router), type(uint256).max);
+
+        messageId = router.ccipSend(recipientChainId, ccipMessage); 
+        messageStack[messageId] = payload;
         emit MessageSent(
-            abi.decode(message.receiver, (address)), // abi-decoding of the sender address,
-            abi.decode(message.data, (string))
+            recipient,
+            payload.operation,
+            payload.message
         );
     }
     
     // receives the message from the buyer for a set amount of purchase
     function _ccipReceive(
         Client.Any2EVMMessage memory any2EvmMessage
-    ) internal override{
+    ) 
+        internal
+        override
+        onlyWhitelistedChain(any2EvmMessage.sourceChainSelector)
+    {
         lastReceivedMessageId = any2EvmMessage.messageId; // fetch the messageId
-        lastReceivedMessage = abi.decode(any2EvmMessage.data, (string)); // abi-decoding of the sent text
+        TradeMessage memory tradeMessage = abi.decode(any2EvmMessage.data, (TradeMessage));
+        
+        messageStack[any2EvmMessage.messageId] = tradeMessage;
+
+        address sender = abi.decode(any2EvmMessage.sender, (address));
+        uint64 senderChainId = any2EvmMessage.sourceChainSelector;
 
         emit MessageReceived(
             any2EvmMessage.messageId,
             any2EvmMessage.sourceChainSelector, // fetch the source chain identifier (aka selector)
-            abi.decode(any2EvmMessage.sender, (address)), // abi-decoding of the sender address,
-            abi.decode(any2EvmMessage.data, (string))
+            sender, // abi-decoding of the sender address,
+            tradeMessage.operation,
+            tradeMessage.message
         );
-
-        // add to the order book
-        orderBook[any2EvmMessage.messageId] = abi.decode(any2EvmMessage.data, (Order));
+        
+        if(tradeMessage.operation==OperationType.REQUEST_PUBKEY){
+            provideEthPubkey(sender, senderChainId);
+        } else if(tradeMessage.operation==OperationType.REQUEST_PROOF){
+            //TODO: how to send the proof?
+            setSupplyProofRequest(any2EvmMessage.messageId);
+        }
     }
 
     /// @notice Allows the contract owner to withdraw the entire balance of Ether from the contract.
