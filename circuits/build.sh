@@ -5,7 +5,7 @@ if [ ! -f "$PTAU_FILE" ]; then
   wget https://hermez.s3-eu-west-1.amazonaws.com/powersOfTau28_hez_final_14.ptau -O $PTAU_FILE
 fi
 
-for CIRCUIT_NAME in CanFillOrder
+for CIRCUIT_NAME in CanFillOrder SaltedHashMain;
 do
   cd build
   circom ../src/$CIRCUIT_NAME.circom --r1cs --wasm --sym --c

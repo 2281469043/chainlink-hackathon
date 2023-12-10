@@ -28,8 +28,8 @@ export default function EncryptRequest() {
     return (
         <Card>
             <CardTitle>Encrypt Request</CardTitle>
-            <TextInput label="Public Key" value={publicKey} onChange={setPublicKey} />
-            <TextInput label="Requested Amount" value={request} onChange={setRequest} />
+            <TextInput label="Seller's Ethereum Public Key" value={publicKey} onChange={setPublicKey} />
+            <TextInput label="Signed Request" value={request} onChange={setRequest} />
             <TextInput label="Ciphertext" value={encryptedMessage} disabled />
         </Card>
     );

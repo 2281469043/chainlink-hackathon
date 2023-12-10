@@ -34,11 +34,10 @@ export default function SignAmount() {
         })()
     }, [eddsa, amount, privateKey]);
 
-    console.log('sig', signature);
     const formattedSignature = signature ? JSON.stringify({
         R8x: Buffer.from(signature.R8[0]).toString('hex'),
         R8y: Buffer.from(signature.R8[1]).toString('hex'),
-        S: signature.S.toString(16),
+        S: signature.S.toString(10),
         amount: signature.amount
     }) : '';
 

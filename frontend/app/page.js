@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import DecryptRequest from '@/components/DecryptRequest';
 import GetEthereumPublicKey from '@/components/GetEthereumPublicKey';
 import GetCircomPublicKey from '@/components/GetCircomPublicKey';
+import ProveSupply from '@/components/ProveSupply';
 
 export default function Home() {
   const { address } = useAccount();
@@ -32,6 +33,7 @@ export default function Home() {
             <DecryptRequest />
             <GetEthereumPublicKey />
             <GetCircomPublicKey />
+            <ProveSupply />
           </div>
         )
       }

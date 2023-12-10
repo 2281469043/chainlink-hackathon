@@ -28,8 +28,6 @@ export default function SignAmount() {
         })()
     }, [eddsa, privateKey]);
 
-    console.log('publicKey', publicKey);
-
     const Ax = publicKey ? Buffer.from(publicKey[0]).toString('hex') : '';
     const Ay = publicKey ? Buffer.from(publicKey[1]).toString('hex') : '';
 
