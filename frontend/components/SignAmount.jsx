@@ -1,5 +1,4 @@
-import Card from "./Card";
-import CardTitle from "./CardTitle";
+import { Card, CardTitle, CardBody } from "./Card";
 import TextInput from "./TextInput";
 import { useState, useEffect } from "react";
 import { buildEddsa } from "circomlibjs";
@@ -43,10 +42,12 @@ export default function SignAmount() {
 
     return (
         <Card>
-            <CardTitle>Sign Amount</CardTitle>
-            <TextInput label="Amount" value={amount} onChange={setAmount} />
-            <TextInput label="Circuit Private Key" value={privateKey} onChange={setPrivateKey} />
-            <TextInput label="Signature" value={formattedSignature} disabled />
+            <CardTitle bgColor="red-400">3. Buyer: Sign Amount</CardTitle>
+            <CardBody>
+                <TextInput label="Amount" value={amount} onChange={setAmount} />
+                <TextInput label="Circuit Private Key" value={privateKey} onChange={setPrivateKey} />
+                <TextInput label="Signature" value={formattedSignature} disabled />
+            </CardBody>
         </Card>
     );
 }

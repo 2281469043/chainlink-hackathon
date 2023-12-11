@@ -1,6 +1,5 @@
 import { useState } from "react";
-import Card from "./Card";
-import CardTitle from "./CardTitle";
+import {Card, CardBody, CardTitle} from "./Card";
 import TextInput from "./TextInput";
 import Button from "./Button";
 import { useAccount } from 'wagmi'
@@ -13,6 +12,7 @@ export default function DecryptRequest() {
     return (
         <Card>
             <CardTitle>Decrypt Request</CardTitle>
+            <CardBody>
             <TextInput label="Ciphertext" value={ciphertext} onChange={setCiphertext} />
             <Button onClick={async () => {
                 let message = await window.ethereum.request({
@@ -26,6 +26,7 @@ export default function DecryptRequest() {
             }}>Decrypt</Button>
             <TextInput label="Address" value={address} onChange={() => {}} disabled />
             <TextInput label="Signed Amount" value={signedAmount} onChange={setSignedAmount} disabled />
+            </CardBody>
         </Card>
     );
 }

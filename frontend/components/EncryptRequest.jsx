@@ -2,8 +2,7 @@
 
 import TextInput from './TextInput';
 import { useState, useEffect } from 'react';
-import Card from './Card';
-import CardTitle from './CardTitle';
+import {Card, CardBody, CardTitle} from "./Card";
 
 async function encrypt(publicKey, message) {
     const response = await fetch(`/api/encrypt?publicKey=${publicKey}&message=${message}`);
@@ -27,10 +26,12 @@ export default function EncryptRequest() {
 
     return (
         <Card>
-            <CardTitle>Encrypt Request</CardTitle>
-            <TextInput label="Seller's Ethereum Public Key" value={publicKey} onChange={setPublicKey} />
-            <TextInput label="Signed Request" value={request} onChange={setRequest} />
-            <TextInput label="Ciphertext" value={encryptedMessage} disabled />
+            <CardTitle bgColor="red-400">4. Buyer: Encrypt Request</CardTitle>
+            <CardBody>
+                <TextInput label="Seller's Ethereum Public Key" value={publicKey} onChange={setPublicKey} />
+                <TextInput label="Signed Request" value={request} onChange={setRequest} />
+                <TextInput label="Ciphertext" value={encryptedMessage} disabled />
+            </CardBody>
         </Card>
     );
 }

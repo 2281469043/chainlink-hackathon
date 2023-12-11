@@ -1,8 +1,8 @@
-import Card from "./Card";
-import CardTitle from "./CardTitle";
+import {Card, CardBody, CardTitle} from "./Card";
 import TextInput from "./TextInput";
 import { useState, useEffect } from "react";
 import { buildEddsa } from "circomlibjs";
+import Button from "./Button";
 
 export default function SignAmount() {
     const [privateKey, setPrivateKey] = useState('');
@@ -33,10 +33,17 @@ export default function SignAmount() {
 
     return (
         <Card>
-            <CardTitle>Get Circom Public Key</CardTitle>
-            <TextInput label="Circuit Private Key" value={privateKey} onChange={setPrivateKey} />
-            <TextInput label="Public Key X" value={Ax} disabled />
-            <TextInput label="Public Key Y" value={Ay} disabled />
+            <CardTitle bgColor="red-400">1. Seller: Get Circom Public Key</CardTitle>
+            <CardBody>
+                <TextInput label="Circuit Private Key" value={privateKey} onChange={setPrivateKey} />
+                <TextInput label="Public Key X" value={Ax} disabled />
+                <TextInput label="Public Key Y" value={Ay} disabled />
+                <Button onClick={async () => {
+                    const response = await fetch(`/api/get-circom-public-key?Ax=${Ax}&Ay=${Ay}`);
+                    alert(JSON.stringify(response))
+                    
+                }}>Share Circom Key</Button>
+            </CardBody>
         </Card>
     );
 }

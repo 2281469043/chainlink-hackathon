@@ -2,8 +2,7 @@
 
 import TextInput from './TextInput';
 import { useState } from 'react';
-import Card from './Card';
-import CardTitle from './CardTitle';
+import {Card, CardBody, CardTitle} from "./Card";
 import Button from './Button';
 
 function flipEndian(hexString) {
@@ -15,6 +14,7 @@ function flipEndian(hexString) {
 }
 
 function hexToUint8(hexString) {
+    // alert(hexString)
     const uint8Array = Uint8Array.from(Buffer.from(hexString, 'hex'));
     let result = [];
     for (let i = 0; i < uint8Array.length; i++) {
@@ -33,36 +33,40 @@ export default function ProveSupply() {
 
     return (
         <Card>
-            <CardTitle>Prove Supply</CardTitle>
-            <TextInput label="Public Key X" value={Ax} onChange={setAx} />
-            <TextInput label="Public Key Y" value={Ay} onChange={setAy} />
-            <TextInput label="Signed Amount" value={signedAmount} onChange={setSignedAmount} />
-            <TextInput label="Supply" value={supply} onChange={setSupply} />
-            <TextInput label="Salt" value={salt} onChange={setSalt} />
-            <Button onClick={async () => {
-                const signedAmountObj = JSON.parse(signedAmount);
+            <CardTitle bgColor="blue-400">5. Seller: Prove Supply</CardTitle>
+            <CardBody>
+                <TextInput label="Public Key X" value={Ax} onChange={setAx} />
+                <TextInput label="Public Key Y" value={Ay} onChange={setAy} />
+                <TextInput label="Signed Amount" value={signedAmount} onChange={setSignedAmount} />
+                <TextInput label="Supply" value={supply} onChange={setSupply} />
+                <TextInput label="Salt" value={salt} onChange={setSalt} />
+                <Button onClick={async () => {
+                    const signedAmountObj = JSON.parse(signedAmount);
+                    // alert(JSON.stringify(signedAmountObj))
+                    // console.log(signedAmountObj)
 
-                const inputSignals = {
-                    requestedSupply: signedAmountObj.amount,
-                    signatureR8x: hexToUint8(signedAmountObj.R8x),
-                    signatureR8y: hexToUint8(signedAmountObj.R8y),
-                    signatureS: signedAmountObj.S,
-                    buyerPublicKeyAx: hexToUint8(Ax),
-                    buyerPublicKeyAy: hexToUint8(Ay),
-                    supply: supply,
-                    salt: salt,
-                };
+                    const inputSignals = {
+                        requestedSupply: signedAmountObj.amount,
+                        signatureR8x: hexToUint8(signedAmountObj.R8x),
+                        signatureR8y: hexToUint8(signedAmountObj.R8y),
+                        signatureS: signedAmountObj.S,
+                        buyerPublicKeyAx: hexToUint8(Ax),
+                        buyerPublicKeyAy: hexToUint8(Ay),
+                        supply: supply,
+                        salt: salt,
+                    };
 
-                const inputSignalsString = JSON.stringify(inputSignals);
-                const inputSignalsEncoded = Buffer.from(inputSignalsString).toString('base64');
+                    const inputSignalsString = JSON.stringify(inputSignals);
+                    const inputSignalsEncoded = Buffer.from(inputSignalsString).toString('base64');
 
-                const response = await fetch(
-                    `/api/proveSupply?inputSignals=${inputSignalsEncoded}`,
-                );
-                const text = await response.text();
-                setProof(text);
-            }}>Prove</Button>
-            <TextInput label="Proof" value={proof} onChange={setProof} disabled />
+                    const response = await fetch(
+                        `/api/proveSupply?inputSignals=${inputSignalsEncoded}`,
+                    );
+                    const text = await response.text();
+                    setProof(text);
+                }}>Prove</Button>
+                <TextInput label="Proof" value={proof} onChange={setProof} disabled />
+            </CardBody>
         </Card>
     );
 }

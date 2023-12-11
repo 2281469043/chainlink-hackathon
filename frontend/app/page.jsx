@@ -9,6 +9,7 @@ import DecryptRequest from '@/components/DecryptRequest';
 import GetEthereumPublicKey from '@/components/GetEthereumPublicKey';
 import GetCircomPublicKey from '@/components/GetCircomPublicKey';
 import ProveSupply from '@/components/ProveSupply';
+import VerifyProof from '@/components/VerifyProof';
 
 export default function Home() {
   const { address } = useAccount();
@@ -22,21 +23,22 @@ export default function Home() {
 
   return (
     <>
-      <div className='grid grid-cols-3 gap-4 m-4'>
-        <ConnectWallet />
-      </div>
       {
         address && !loading && (
-          <div className='grid grid-cols-3 gap-4 m-4'>
+          <div className="grid grid-flow-row grid-cols-3 gap-4 mt-4 mx-4">
+            <GetCircomPublicKey />
+            <GetEthereumPublicKey />
             <SignAmount />
             <EncryptRequesst />
             <DecryptRequest />
-            <GetEthereumPublicKey />
-            <GetCircomPublicKey />
             <ProveSupply />
+            <VerifyProof />
           </div>
         )
       }
+      <div className='grid grid-cols-1 gap-4 m-4'>
+        <ConnectWallet />
+      </div>
     </>
   )
 }
