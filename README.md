@@ -4,6 +4,8 @@
 
 ### Build Circuits
 
+Make sure [Circom](https://docs.circom.io/getting-started/installation) is installed.
+
 ```bash
 cd circuits
 npm install
