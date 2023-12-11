@@ -1,5 +1,5 @@
 import { useState } from "react";
-import {Card, CardBody, CardTitle} from "./Card";
+import {Card, CardBody, SellerCardTitle} from "./Card";
 import TextInput from "./TextInput";
 import Button from "./Button";
 import { useAccount } from 'wagmi'
@@ -11,9 +11,9 @@ export default function DecryptRequest() {
 
     return (
         <Card>
-            <CardTitle>Decrypt Request</CardTitle>
+            <SellerCardTitle>5. Decrypt Request</SellerCardTitle>
             <CardBody>
-            <TextInput label="Ciphertext" value={ciphertext} onChange={setCiphertext} />
+            <TextInput label="Encrypted Request" value={ciphertext} onChange={setCiphertext} />
             <Button onClick={async () => {
                 let message = await window.ethereum.request({
                     "method": "eth_decrypt",

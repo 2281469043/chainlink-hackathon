@@ -12,7 +12,7 @@ export default function TextInput({
             </div>
             <input
                 type="text" placeholder={placeholder}
-                className="input input-primary input-bordered w-full"
+                className={`input input-primary input-bordered w-full`}
                 disabled={disabled}
                 value={value}
                 onChange={e => onChange(e.target.value)}
