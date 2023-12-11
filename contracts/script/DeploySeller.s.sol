@@ -16,7 +16,11 @@ contract DeploySeller is Script, Helper {
         vm.startBroadcast(deployerPrivateKey);
         
         Seller seller = new Seller(router, link);
+        seller.setEthPubkey(
+            vm.envBytes32("PUBLIC_KEY")
+        );
         seller.whitelistChain(chainIdBscTestnet);
+        seller.whitelistChain(chainIdEthereumSepolia);
         vm.stopBroadcast();
     }
     

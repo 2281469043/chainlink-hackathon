@@ -14,6 +14,7 @@ contract DeployBuyer is Script, Helper {
         vm.startBroadcast(deployerPrivateKey);
         
         Buyer buyer = new Buyer(router,link);
+        buyer.whitelistChain(chainIdBscTestnet);
         buyer.whitelistChain(chainIdEthereumSepolia);
 
         vm.stopBroadcast();

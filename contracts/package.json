@@ -1,14 +1,17 @@
 {
   "scripts": {
-    "deploy": "yarn deply-seller && yarn deploy-buyer",
+    "deploy": "yarn deploy-seller && yarn deploy-buyer",
     "reset": "yarn reset-buyer && yarn reset-seller",
-    "deploy-buyer": "source .env && forge script script/DeployBuyer.s.sol:DeployBuyer --rpc-url $BSC_RPC_URL --broadcast -vvvvv && node update-contract-address.js buyer",
-    "deploy-seller": "source .env && forge script script/DeploySeller.s.sol:DeploySeller --rpc-url $SEPOLIA_RPC_URL --broadcast -vvvvv && node update-contract-address.js seller",
+    "deploy-buyer": "source .env && forge script script/DeployBuyer.s.sol:DeployBuyer --rpc-url $BSC_RPC_URL --broadcast -vvvvv && node update-contract-address.js buyer && yarn copy-buyer",
+    "deploy-seller": "source .env && forge script script/DeploySeller.s.sol:DeploySeller --rpc-url $SEPOLIA_RPC_URL --broadcast -vvvvv && node update-contract-address.js seller && yarn copy-seller",
+    "copy-buyer":" cp ./out/Buyer.sol/Buyer.json ../frontend/contracts/Buyer.json",
+    "copy-seller":" cp ./out/Seller.sol/Seller.json ../frontend/contracts/Seller.json",
     "reset-buyer": "yarn drain-buyer && yarn deploy-buyer && yarn load-buyer",
     "reset-seller": "yarn drain-seller && yarn deploy-seller && yarn load-seller",
     "load-buyer":"source .env && forge script script/Buyer.s.sol:LoadBuyer --rpc-url $BSC_RPC_URL --broadcast -vvvvv",
     "load-seller":"source .env && forge script script/Seller.s.sol:LoadSeller --rpc-url $SEPOLIA_RPC_URL --broadcast -vvvvv",
-    "test-buyer-sendorder":"source .env && forge script script/Buyer.s.sol:TestSendOrder --rpc-url $BSC_RPC_URL --broadcast -vvvvv",
+    "test-buyer":"source .env && forge script script/Buyer.s.sol:TestBuyer --rpc-url $BSC_RPC_URL --broadcast -vvvvv",
+    "test-seller":"source .env && forge script script/Seller.s.sol:TestSeller --rpc-url $SEPOLIA_RPC_URL --broadcast -vvvvv",
     "drain-buyer":"source .env && forge script script/Buyer.s.sol:DrainBuyer --rpc-url $BSC_RPC_URL --broadcast -vvvvv",
     "drain-seller":"source .env && forge script script/Seller.s.sol:DrainSeller --rpc-url $SEPOLIA_RPC_URL --broadcast -vvvvv",
     "copy-verifier": "cp ../circuits/build/CanFillOrder_verifier.sol ./src/Verifier.sol"

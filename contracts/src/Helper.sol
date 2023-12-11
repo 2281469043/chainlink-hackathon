@@ -30,7 +30,7 @@ contract Helper {
 
     // Router addresses
     address constant routerEthereumSepolia =
-        0xD0daae2231E9CB96b94C8512223533293C3693Bf;
+        0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59;
     address constant routerOptimismGoerli =
         0xEB52E9Ae4A9Fb37172978642d4C141ef53876f26;
     address constant routerAvalancheFuji =
@@ -40,7 +40,7 @@ contract Helper {
     address constant routerPolygonMumbai =
         0x70499c328e1E2a3c41108bd3730F6670a44595D1;
     address constant routerBscTestnet =
-        0x9527E2d01A3064ef6b50c1Da1C0cC523803BCFF2;
+        0xE1053aE1857476f36A3C62580FF9b016E8EE8F6f;
 
     // Link addresses (can be used as fee)
     address constant linkEthereumSepolia =

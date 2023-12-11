@@ -37,23 +37,54 @@ contract DrainBuyer is Script, Helper {
     }
 }
 
-contract TestSendOrder is Script, Helper {
+contract TestBuyer is Script, Helper {
+    // enum OperationType{ 
+    //     MESSAGE, 
+    //     REQUEST_PUBKEY,
+    //     PROVIDE_PUBKEY,
+    //     REQUEST_PROOF,
+    //     PROVIDE_PROOF
+    // }
+
+    // struct CircomPubkey {
+    //     uint256 Ax;
+    //     uint256 Ay;
+    // }
+
+    // struct EthPubkey {
+    //     bytes32 value;
+    // }
+
+    // struct TradeMessage {
+    //     OperationType operation;
+    //     CircomPubkey circomPubkey;
+    //     EthPubkey ethPubkey;
+    //     bytes encryptedRequest;
+    //     string message;
+    //     bytes proof;
+    // }
+
+    // CircomPubkey circomPubkey;
+    // EthPubkey ethPubkey;
+    // LinkTokenInterface link;
+    // IRouterClient router;
+
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
         
         Buyer buyer = Buyer(vm.envAddress("BUYER_CONTRACT_ADDRESS"));
         
-        
+        // buyer.whitelistChain(chainIdBscTestnet);
         buyer.setCircomPubkey(12123123, 324234234);
-        
-        buyer.requestEthPubkey(
-            vm.envAddress("SELLER_CONTRACT_ADDRESS"),
-            chainIdEthereumSepolia
-        );
-        
+
+        // buyer.provideCircomPubkey(
+        //     vm.envAddress("SELLER_CONTRACT_ADDRESS"),
+        //     chainIdEthereumSepolia
+        // );
+
         // emulate the Eth key
-        buyer.setEthPubkey("");
+        // buyer.setEthPubkey("asdfasdf");
 
         buyer.requestSupplyProof(
             vm.envAddress("SELLER_CONTRACT_ADDRESS"),
@@ -61,6 +92,13 @@ contract TestSendOrder is Script, Helper {
             ""
         );
 
+        // console2.log("testing proof");
+        // bool proofgood = buyer.verifyProof(
+        //     vm.envBytes("PROOF")
+        // );
+
+        // console2.log("proofgood", proofgood);
+        
         vm.stopBroadcast();
     }
 }
@@ -99,7 +137,7 @@ contract TestScript is Script, Helper {
     CircomPubkey circomPubkey;
     EthPubkey ethPubkey;
 
-    function sendMessage(
+    function sendTradeMessage(
         address recipient,
         uint64 recipientChainId,
         TradeMessage memory payload
@@ -132,7 +170,7 @@ contract TestScript is Script, Helper {
 
     function run() public {
         ethPubkey = EthPubkey("");
-        sendMessage(
+        sendTradeMessage(
             vm.envAddress("SELLER_CONTRACT_ADDRESS"),
             chainIdEthereumSepolia,
             TradeMessage({
