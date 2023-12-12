@@ -1,6 +1,5 @@
 # Contracts for Cross Link Private Supply
-
-This project was built and tested using Foundry
+This project was built and tested using [Foundry](https://github.com/foundry-rs/foundry)
 
 ## Contracts
 The main contracts are `src/Buyer.sol` and `src/Seller.sol`.
