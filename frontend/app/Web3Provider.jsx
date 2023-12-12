@@ -3,13 +3,13 @@
 import { APP_NAME, CONNECTKIT_THEME } from '@/utils/consts'
 import { WagmiConfig, createConfig } from 'wagmi'
 import { ConnectKitProvider, getDefaultConfig } from 'connectkit'
-import { sepolia } from 'wagmi'
+import { sepolia, bscTestnet } from 'wagmi/chains'
 
 const config = createConfig(
 	getDefaultConfig({
 		appName: APP_NAME,
 		walletConnectProjectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID,
-		chains: [sepolia]
+		chains: [ sepolia, bscTestnet ]
 	})
 )
 

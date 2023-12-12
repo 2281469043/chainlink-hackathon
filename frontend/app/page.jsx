@@ -11,6 +11,7 @@ import GetCircomPublicKey from '@/components/GetCircomPublicKey';
 import ProveSupply from '@/components/ProveSupply';
 import VerifyProof from '@/components/VerifyProof';
 import SendProof from '@/components/SendProof';
+import SwitchNetwork from '@/components/SwitchNetwork';
 
 export default function Home() {
   const { address } = useAccount();
@@ -28,10 +29,14 @@ export default function Home() {
         address && !loading && (
           <div className="grid grid-cols-2">
             <div className="flex flex-col">
-              <div className="flex items-center justify-center py-4 bg-red-400">
+              <div className="grid grid-cols-2 items-center justify-center p-4 bg-red-400">
                 <h1 className="text-4xl font-bold">
-                  Buyer
+                  Buyer Interface
                 </h1>
+                <div>
+                  <SwitchNetwork target="bsc"/>
+                </div>
+
               </div>
               <div className="grid grid-cols-2 gap-2 m-2">
                 <GetCircomPublicKey />
@@ -41,10 +46,13 @@ export default function Home() {
               </div>
             </div>
             <div className="flex flex-col">
-              <div className="flex items-center justify-center py-4 bg-blue-400">
+              <div className="grid grid-cols-2 items-center justify-center p-4 bg-blue-400">
                 <h1 className="text-4xl font-bold">
-                  Seller
+                  Seller Interface
                 </h1>
+                <div>
+                  <SwitchNetwork target="eth"/>
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-2 m-2">
                 <GetEthereumPublicKey />
