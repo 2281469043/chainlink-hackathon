@@ -24,7 +24,6 @@ const SendProof = () => {
 
   const { write: provideSupplyProof } = useContractWrite(provideSupplyProofConfig)
 
-
   return (
     <Card>
       <SellerCardTitle bgColor="red-200">7. Send Proof</SellerCardTitle>

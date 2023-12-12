@@ -6,6 +6,7 @@ const SwitchNetwork = ({ target }) => {
   const { chain } = useNetwork()
   const { chains, error, isLoading, pendingChainId, switchNetwork } = useSwitchNetwork()
   const isTargetSelected = target ==='bsc' && chain.id === bscTestnet.id || target ==='eth' && chain.id === sepolia.id
+
   return (
     <div className="flex flex-col items-center justify-center">
       <h3>

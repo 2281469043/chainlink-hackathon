@@ -26,7 +26,7 @@ const VerifyProof = () => {
       <BuyerCardTitle bgColor="red-200">8. Verify Proof</BuyerCardTitle>
       <CardBody>
         <TextInput label="Proof" value={proof} onChange={setProof} />
-        <Button onClick={verifyProof?.()}>Verify Proof</Button>
+        <Button onClick={() => verifyProof?.()}>Verify Proof</Button>
       </CardBody>
     </Card>
   );

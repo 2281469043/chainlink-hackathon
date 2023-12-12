@@ -33,12 +33,12 @@ const EncryptRequest = () => {
     gas: 500_000n,
     args: [
       process.env.NEXT_PUBLIC_SELLER_CONTRACT_ADDRESS,
-      process.env.NEXT_PUBLIC_ETH_CHAIN_ID
+      process.env.NEXT_PUBLIC_ETH_CHAIN_ID,
+      Uint8Array.from(request),
     ],
   })
 
   const { write: requestSupplyProof } = useContractWrite(requestSupplyProofConfig)
-
 
   return (
     <Card>

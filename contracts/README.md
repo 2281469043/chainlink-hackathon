@@ -1,84 +1,18 @@
-## Foundry
+# Contracts for Cross Link Private Supply
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+This project was built and tested using Foundry
 
-Foundry consists of:
+## Contracts
+The main contracts are `src/Buyer.sol` and `src/Seller.sol`.
+These contracts inherit from `src/TradeEntity.sol`, which inherits from `OwnerIsCreator` and `CCIPReceiver` to enable a secure cross-chain interaction.
+The buyer contract initiates the interaction, to which the seller contract responds.
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+## To deploy
+Run `yarn deploy` to deply both contracts.
 
-## Documentation
+## To load the contracts
+Run `yarn load-buyer && yarn load-seller` to load the respective contracts with the LINK token.
 
-https://book.getfoundry.sh/
-
-## Usage
-
-### Build
-
-```shell
-$ forge build
-```
-
-### Test
-
-```shell
-$ forge test
-```
-
-### Format
-
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
-
-## Local development:
-
-### Chainlink
-
-```shell
-make fct-anvil
-```
-
-### EVM nodes
-
-```shell
-anvil -p 8546
-```
-
-```shell
-anvil -p 8547
-```
+## To test the contracts
+Run `yarn test-buyer && yarn test-seller` to test both of the contracts.
+The contents of the tests can be changed in the `script/Buyer.s.sol` and `script/Seller.s.sol` respectively.
