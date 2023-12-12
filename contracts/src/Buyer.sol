@@ -59,8 +59,18 @@ contract Buyer is TradeEntity {
                 proof: ""
             })
         );
+    } 
+    function verifyProof(
+        bytes memory payload 
+    ) public onlyOwner returns (bool isVerified) {
+        (bool success, bytes memory result) = verifier.call(payload);
+        if(!success){
+            isVerified = false;
+        } else {
+            isVerified = abi.decode(result, (bool));
+        }
     }
-
+    
     function _ccipReceive(
         Client.Any2EVMMessage memory any2EvmMessage
     )
